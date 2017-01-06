@@ -2,25 +2,112 @@ Authors: Charles Zhang, Shantanu Jha, Gabriel Marks
 
 Project Description
 
-	Our project is intended to be a Science Bowl-style simulator. One computer will act as a server, and will have a set of free-response problems that 
-	require. This computer will also keep track of the scores. When a client connects to the server, they first choose either the green or red team with
-	a limit of up to 5 people per team. The rules of SciBowl are as follows:
+	Our project is intended to be a Science Bowl-style simulator. One computer
+	will act as a server, and will have a set of Science Bowl questions that
+	will be used for games. This computer will also keep track of the scores,
+	additional game info, and either run a moderator interface or choose another
+	user as moderator and run a player interface. 
+	
+	The rules of SciBowl are as follows:
   
-	  - Start with a question that's sent to both teams. 
-	  - Correctly answering the question awards 10 points to that team.
-  	  - If someone on a team answers the question incorrectly, no one on that team can answer the question.
-  	  - If neither team gets the question, do another question.
+	  - There are two types of questions and two forms of questions:
+		Types:
+		- Toss-Up Questions: Any player can buzz in on a Toss-Up question. If
+		  the player answers the question correctly, then their team gets the
+		  bonus question. There is no collaboration on Toss-Up questions.
+		  Players have a maximum of 5 seconds to buzz-in and answer a Toss-Up
+		  question after it is fully read, and 4 points will be awarded for a
+		  correct answer. After buzzing in, players have up to two seconds to
+		  begin answering, otherwise it is a "stall" and incorrect.
+		- Bonus Questions: The team whose player answer the Toss-Up question
+		  correctly gets read the Bonus question. Teams can collaborate on Bonus
+		  questions, but their Captain must give an answer before 20 seconds
+		  have passed after the question is fully read. Teams will get a 5
+		  second warning and 10 points if they answer this correctly.
+		Forms: Toss-Up and Bonus questions can be of both forms
+		- Multiple Choice: These questions have 4 correct answers, labelled "W",
+		  "X", "Y", and "Z". To answer these correctly, the player must either
+		  answer with the exact correct answer, the correct letter, or both.
+		  E.g.: The answer is "W) Cats". The player must answer "W", "W) Cats",
+		  or "Cats". "Cat" would be incorrect. 
+		- Short Answer: These questions have no listed answers. Sometimes they
+		  may be a little looser in what is acceptable. Also, there maybe be
+		  questions in which the answer is choosing from a list of given thigns.
+		  E.g.: "By name or number, please choose what is an element: 1) Steel
+		  2) Copper 3) Nickel" The answer would be "2,3 or Copper, Nickel". 
+	  - Gameplay
+		- First the Toss-Up question is read to every player. If correctly
+		  answered by a player, then their team gets the bonus question and 4
+		  points. If a player answers incorrectly, then no one else from their
+		  team can buzz-in again for that Toss-Up.
+		- Interrupts: Each question has a Subject categorization and Form
+		  categorization out of "Biology, Physics, Mathematics, Chemistry, 
+		  Earth and Space Science, and Energy". At the beginning of each toss-up
+		  question the Subject category is read. If a player buzzes in after that
+		  category is read, then they must answer. If the player buzzed in before
+		  the question is fully read and gets it incorrect for whatever reason, 
+		  then the other team is awarded 4 points and the question is fully re-read 
+		  if no player from the other team has answered yet. 
+		- Bonus questions will be awarded to the team of the player who answered
+		  the toss-up questino correctly. These are worth 10 points and will be
+		  awarded after the captain of the team answers correctly before 20
+		  seconds is up. Teams can collaborate.
+		- If the captain leaves the game, either the team can chat and decide on
+		  a new captain and the moderator will see this chat and officially
+		  choose the new captain, or the moderator will just choose the new
+		  captain with no insight from the team. 
 
 	Whenever a question is answered, the server will process the question. The client that answered the question will be recorded, and info about the 
 	question (the answer, who answered, if it's correct) will be sent to all clients. This will allow everyone to know the current state of the game, 
 	like in real Science Bowl. 
 
 User Interface
-
-     This will be a text based game. When a client first connects, they'll be asked to pick a team:  green (G) or red (R). Then, whenever a question is sent,
-     the screen will clear and the question is displayed. Players can interrupt to answer by pressing the ENTER key. After the question is completely shown, 
-     there will be a prompt for the answer and a timer for the seconds left to answer the question. Notifications about other users' answers will appear 
-     under this prompt. 
+	- One user will begin the round, and choose the maximum sizes of the
+	  teams. After the game has started, players will first choose their allegiance 
+	  to either the Red (R) or Green (G) team. Then the rules will be stated,
+	  and after everyone consents by pressing enter, or players that want to
+	  leave exit, the game begins. The user that began the round will be called
+	  the moderator. The moderator will not participate in the round, but
+	  instead verify if questions are correct, and regulate other rules. Once a
+	  toss-up question or bonus question is answered, the moderator will recieve
+	  the player's answer, allegiance, and the correct stored answer for the
+	  question. They will then decided if the question is correct or incorrect.
+	  Even the question is multiple choice and exactly correct, the moderator
+	  will be prompted to verify the answer and will be able to override it if
+	  they wish.
+	  Moderators will also see quesitons as they appear to the users,
+	  and see the current score, and the total connected players and their
+	  allegiances. 
+	- Users will at all times see the current score, their allegiance, and the
+	  players on each team. On toss-up questions, the question will be "read"
+	  by having each word appear with delay on the screen of every player's
+	  terminal. After a player buzzes in, the question will stop reading
+	  if it is in the middle of a question. The player that buzzed in will be
+	  prompted to answer with a proper answer before a stall is called. We will
+	  decide later on whether we want to have a set time limit to anwering
+	  toss-up questions after a player buzzes in or something more adaptable. 
+	- If a toss-up question is fully read, then the bonus question will be read
+	  to the team whose player answered the toss-up correctly. The bonus
+	  question will be read to all players. However, only the captain of the  team 
+	  that can asnwer will be able to do so. The team that is to answer the
+	  bonus question will be given a chat interface under the question where
+	  they can talk to each other and discuss the question. Whether this chat
+	  interface be visible to the other team is something we will decide later.
+	  The captain will then press a special key and then begin to answer the 
+	  bonus question. The special key must be pressed before 20 seconds is
+	  called, and teams will be given a 5 second warning. Captains must then
+	  answer the question in a set time limit after pressing the special key,
+	  otherwise it is a stall and incorrect. 10 points will be awarded to
+	  correct answers, determined by either the moderator or program.
+	- We may display a timer for Toss-Up and/or Bonus questions. 
+	- If a player has a scientific or administrative challenge, they will have
+	  time to challenge the question by pressing a special key after the set of
+	  toss-up and/or bonus questions is fully read and before the next set
+	  begins. There will be a 5 second interveral between each set of questions
+	  to do so. Players can challenge using a special key, and teams will only
+	  be allowed 2 incorrect scientific challenges. 
+	- If they wish, players can also bring up the rules by pressing a special
+	  key at anytime in the game. 
 
 Technical Design
 
@@ -42,6 +129,17 @@ Technical Design
 
 	 Algorithms: none
 
+Additional Modes:
+	- Toss-Up only games, where unlimited players can join, and there are no
+	  Bonus questions nor teams. Instead of a score showing points for each
+	  team, there will instead be a leader board of points for individual
+	  players. We may read bonus questions as toss-up questions, which we would
+	  notify players of before reading the question. Bonus as a toss-up
+	  questions would have an answering time limit of 20 seconds instead of 5. 
+
+Nota Bene: We already have a CSV of over 1000 pairs of Toss-Up and Bonus
+questions that we made collectively through a question collection program in
+SciBowl. 
 
 Project Timeline (rough estimate) 
 
@@ -49,6 +147,7 @@ Project Timeline (rough estimate)
 	
 	- 1/15/17: Get the server to send the questions and the client to display the questions.
 
-	- 1/18/17: Implement interrupts and answering system (semaphore control).
+	- 1/18/17: Implement SciBowl interface and answering system (semaphore control).
 
-	- 1/20/17: Additional features.
+	- 1/20/17: Additional features like challenges or additional modes will be
+			   implemented and bugs will be solved.
