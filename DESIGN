@@ -1,0 +1,54 @@
+Authors: Charles Zhang, Shantanu Jha, Gabriel Marks
+
+Project Description
+
+	Our project is intended to be a Science Bowl-style simulator. One computer will act as a server, and will have a set of free-response problems that 
+	require. This computer will also keep track of the scores. When a client connects to the server, they first choose either the green or red team with
+	a limit of up to 5 people per team. The rules of SciBowl are as follows:
+  
+	  - Start with a question that's sent to both teams. 
+	  - Correctly answering the question awards 10 points to that team.
+  	  - If someone on a team answers the question incorrectly, no one on that team can answer the question.
+  	  - If neither team gets the question, do another question.
+
+	Whenever a question is answered, the server will process the question. The client that answered the question will be recorded, and info about the 
+	question (the answer, who answered, if it's correct) will be sent to all clients. This will allow everyone to know the current state of the game, 
+	like in real Science Bowl. 
+
+User Interface
+
+     This will be a text based game. When a client first connects, they'll be asked to pick a team:  green (G) or red (R). Then, whenever a question is sent,
+     the screen will clear and the question is displayed. Players can interrupt to answer by pressing the ENTER key. After the question is completely shown, 
+     there will be a prompt for the answer and a timer for the seconds left to answer the question. Notifications about other users' answers will appear 
+     under this prompt. 
+
+Technical Design
+
+	  We'll be using network protocols (TCP, UDP, etc) to handle communication between the server computer and the clients (players), with process 
+	  management to deal with multiple clients. We'll have a file of questions, which the server will read into a buffer (using file I/O) at the 
+	  beginning of the game. The contents of the buffer will be parsed and stored into arrays (or linked lists involving a "questions" struct). As the 
+	  game progresses, the questions will be taken from the array (or linked list), sent to the clients (once again using multiple processes). The client
+	  will then print out the question on each player's terminal screen. Basic I/O, such as fgets, will be used to handle player input in the terminal, 
+	  like interrupts or answers. The server will use semaphores to control when players can answer (e.g Player 1 interrupts first to answer, Player 2 
+	  and Player 3 interrupted later but cannot answer while Player 1 is answering). 
+
+	  Responsibilities (subject to change):
+	  	  
+		  - Charles: Implementing network, process management, server work (file I/O, question parsing/storing, etc)     
+
+		  - Shantanu: Implementing network, process management, client work (player interrupting/answering, displaying the questions, etc)  
+		  
+		  - Gabe: Implementing network, process management, semaphore control  
+
+	 Algorithms: none
+
+
+Project Timeline (rough estimate) 
+
+	- 1/13/17: Finished implementing the network/process management between the server and clients. 
+	
+	- 1/15/17: Get the server to send the questions and the client to display the questions.
+
+	- 1/18/17: Implement interrupts and answering system (semaphore control).
+
+	- 1/20/17: Additional features.
