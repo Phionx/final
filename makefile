@@ -1,3 +1,10 @@
-compile: server.c client.c
+all: server client
+
+server: server.c
 	gcc server.c -o server.out
-	gcc client.c -o client.out
+
+client: client.c
+	gcc client.c -o server.out
+
+clean:
+	-rm *.out *.o
