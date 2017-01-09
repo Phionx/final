@@ -1,0 +1,3 @@
+compile: serverTest.c clienttest.c
+	gcc serverTest.c -o server
+	gcc clienttest.c -o client
