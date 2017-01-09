@@ -38,9 +38,8 @@ int main()
  }
 
   printf("found connection from [%d]\n",getpid());
-  while(1){
-      char buffer[256];
-      read(newsockdes,buffer,sizeof(buffer));
+  char buffer[256];
+  while(read(newsockdes, buffer, 256)){
       /*if(!strcmp(buffer,"exit\n"))
 	{
 	  close(newsockdes);
@@ -48,7 +47,7 @@ int main()
 	  return 0;
 	  }*/
       printf("message from [%d]: %s",getpid(),buffer);
-     }
-  
+  }
+  printf("[%d] disconnected\n",getpid());
   return 0;
 }
