@@ -25,30 +25,31 @@ int main()
   listen(sockdes,5);
   printf("listening for connections\n");
   socklen_t cli_len = sizeof(cli_addr);
-  //  while(1){
+ while(1){
     newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
     if (newsockdes < 0) 
       printf("ERROR on accept\n");
-    /*    if(newsockdes!=-1)
+    if(newsockdes!=-1)
       {
 	int pid = fork();
 	if(!pid)
 	  break;
       }
-      }*/
+ }
 
   printf("found connection from [%d]\n",getpid());
-  while(1){
-      char buffer[256];
+  char buffer[256];
+  while(read(newsockdes,buffer,sizeof(buffer))){
+    //      char buffer[256];
       read(newsockdes,buffer,sizeof(buffer));
       /*if(!strcmp(buffer,"exit\n"))
 	{
 	  close(newsockdes);
-	  printf("[%d] disconnected\n",getpid());
+	  
 	  return 0;
 	  }*/
       printf("message from [%d]: %s",getpid(),buffer);
      }
-  
+  printf("[%d] disconnected\n",getpid());
   return 0;
 }
