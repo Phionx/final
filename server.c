@@ -1,3 +1,4 @@
+#include <time.h>
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,33 +32,33 @@ int main()
       printf("ERROR on accept\n");
     if(newsockdes!=-1)
       {
-	int pid = fork();
-	if(!pid)
+	//int pid = fork();
+	if(!fork())
 	  break;
       }
  }
 
   printf("found connection from [%d]\n",getpid());
-  char buffer[256];
-<<<<<<< HEAD
-  while(read(newsockdes,buffer,sizeof(buffer))){
+  char in[256];//, out[];
     //      char buffer[256];
     //      read(newsockdes,buffer,sizeof(buffer));
-=======
-  while(read(newsockdes, buffer, 256)){
->>>>>>> 9ff1f26238c97e5364611234c4681bd8c9a07eff
-      /*if(!strcmp(buffer,"exit\n"))
-	{
-	  close(newsockdes);
-	  
-	  return 0;
-	  }*/
-      printf("message from [%d]: %s",getpid(),buffer);
-<<<<<<< HEAD
+  char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins.\n";
+  char *outte = out;
+  //printf("%s\n",strsep(&outte," "));
+  char *lol = strsep(&outte," ");
+  struct timespec time;
+  time.tv_nsec = 300000000;
+  while(lol)
+    {  
+      //      write(newsockdes, "hi ", 4);
+      //printf("hi\n");
+      write(newsockdes, lol, strlen(lol)+1);// read(newsockdes, in, 256))
+      printf("sending to [%d]:%s \n", getpid(),lol);
+      lol = strsep(&outte," ");
+      nanosleep(&time, &time);
      }
-=======
-  }
->>>>>>> 9ff1f26238c97e5364611234c4681bd8c9a07eff
+  printf("ended\n");
   printf("[%d] disconnected\n",getpid());
+  close(newsockdes);
   return 0;
 }
