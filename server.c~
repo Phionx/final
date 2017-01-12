@@ -33,7 +33,7 @@ int main()
   listen(sockdes,5);
   printf("listening for connections\n");
   socklen_t cli_len = sizeof(cli_addr);
-  /*
+
   int shm_fd;
   char* shared_mem;
   //int msize; // the size (in bytes) of the shared memory segment 
@@ -41,7 +41,7 @@ int main()
   int key = 123456;
   shm_fd = shmget(key, 1, IPC_CREAT | 0666);
   shared_mem = shmat(shm_fd, NULL, 0);
-  */
+  
 
  while(1){
     newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
@@ -60,7 +60,7 @@ int main()
   char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins.\n";
   
   char* outte = out;
-  //  outte = shared_mem;
+  outte = shared_mem;
 
   char *lol = strsep(&outte," ");
   struct timespec time;
