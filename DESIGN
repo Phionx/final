@@ -68,8 +68,9 @@ Project Description
 
 User Interface
 	- One user will begin the round, and choose the maximum sizes of the
-	  teams. After the game has started, players will first choose their allegiance 
-	  to either the Red (R) or Green (G) team. Then the rules will be stated,
+	  teams. After the game has started, players will first choose their username 
+	  and then be placed in a chat with other players to determine their allegiance
+	  to either be Red (R) or Green (G). Then the rules will be stated,
 	  and after everyone consents by pressing enter, or players that want to
 	  leave exit, the game begins. The user that began the round will be called
 	  the moderator. The moderator will not participate in the round, but
@@ -77,7 +78,7 @@ User Interface
 	  toss-up question or bonus question is answered, the moderator will recieve
 	  the player's answer, allegiance, and the correct stored answer for the
 	  question. They will then decided if the question is correct or incorrect.
-	  Even the question is multiple choice and exactly correct, the moderator
+	  Even if the question is multiple choice and exactly correct, the moderator
 	  will be prompted to verify the answer and will be able to override it if
 	  they wish.
 	  Moderators will also see quesitons as they appear to the users,
