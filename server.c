@@ -11,6 +11,12 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
+
+errorhandle(char* from) {
+  printf("\nError in %s: %s.\n", from, strerror(errno));
+  exit(errno);
+}
 
 int main()
 {
@@ -27,7 +33,7 @@ int main()
 
   if(bind(sockdes, (struct sockaddr *) &serv_addr, sizeof(serv_addr))<0)
     {
-      printf("BINDING ERROR\n");
+      errorhandle("bind");
     }
 
   listen(sockdes,5);
@@ -49,7 +55,7 @@ int main()
  while(1){
     newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
     if (newsockdes < 0) 
-      printf("ERROR on accept\n");
+      errorhandle("accept");
     if(newsockdes!=-1)
       {
 	if(!fork())
