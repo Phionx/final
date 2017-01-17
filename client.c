@@ -9,24 +9,21 @@
 
 int main()
 {
-  int sock;
   struct sockaddr_in serv_addr;
-
-  bzero((char *) &serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
   serv_addr.sin_port = htons(9001);
-  
-  sock = socket(AF_INET, SOCK_STREAM,0);
-  connect(sock, (struct sockaddr *) &serv_addr,sizeof(serv_addr));  
+
+  int sock = socket(AF_INET, SOCK_STREAM,0);
+  connect(sock, (struct sockaddr *) &serv_addr,sizeof(serv_addr));
   char in[256], out[256];
-  
+
   while(read(sock,in,sizeof(in)))
-    {    
+    {
       //      char *lmao = in;
     //printf("type message: ");
     //    fgets(out,sizeof(out),stdin);
-    //write(sock,out,sizeof(out));     
+    //write(sock,out,sizeof(out));
       //printf("receiving ");
       //if(read(sock,in,256))
       //      printf("fuck this\n");
