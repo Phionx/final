@@ -18,8 +18,7 @@ errorhandle(char* from) {
   exit(errno);
 }
 
-int main()
-{
+int main() {
   int sockdes,newsockdes;
 
   struct sockaddr_in serv_addr, cli_addr;
@@ -31,45 +30,42 @@ int main()
   serv_addr.sin_port = htons(9001);
 
 
-  if(bind(sockdes, (struct sockaddr *) &serv_addr, sizeof(serv_addr))<0)
-    {
-      errorhandle("bind");
-    }
+  if(bind(sockdes, (struct sockaddr *) &serv_addr, sizeof(serv_addr))<0) {
+    errorhandle("bind");
+  }
 
   listen(sockdes,5);
   printf("listening for connections\n");
   socklen_t cli_len = sizeof(cli_addr);
-  
+
   int shm_fd;
   char* shared_mem;
-  //int msize; // the size (in bytes) of the shared memory segment 
+  //int msize; // the size (in bytes) of the shared memory segment
   //const char *name = "questions";
   int key = 123456;
   shm_fd = shmget(key, 1, IPC_CREAT | 0666);
   shared_mem = (char* )shmat(shm_fd, NULL, 0);
- 
-  
+
+
 
   //outte = shared_mem;
-  
- while(1){
-    newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
-    if (newsockdes < 0) 
-      errorhandle("accept");
-    if(newsockdes!=-1)
-      {
-	if(!fork())
-	  {
-	    //	    printf("shm mem: %s\n", shared_mem);
-	    //	    printf("outte: %s\n",outte);
-	    //    if(shared_mem)
-	    //strcpy(outte, shared_mem);
-	    break;
-	  }
-      }
- }
 
- //child process  
+ while(1) {
+  newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
+  if(newsockdes < 0)
+    errorhandle("accept");
+  if(newsockdes!=-1) {
+    if(!fork()) {
+      //      printf("shm mem: %s\n", shared_mem);
+      //      printf("outte: %s\n",outte);
+      //    if(shared_mem)
+      //strcpy(outte, shared_mem);
+      break;
+    }
+  }
+}
+
+ //child process
   printf("found connection from [%d]\n",getpid());
   char in[256];//, out[];
 
@@ -84,26 +80,25 @@ int main()
   if(shared_mem){
     strcpy(outte,shared_mem);
   }
-*/  
+*/
   printf("%s\n",outte);
   char *lol = strsep(&outte," ");
   //  printf("lol: %s\n",lol);
-  
+
   struct timespec time;
   time.tv_nsec = 300000000;
-  
-  while(lol)
-    {  
-      write(newsockdes, lol, strlen(lol)+1);// read(newsockdes, in, 256))
-      printf("sending to [%d]:%s \n", getpid(),lol);
-      lol = strsep(&outte," ");
-      //      printf("sending to [%d]:%s \n", getpid(),lol);
-      // if(!lol)
-      //break;
-      nanosleep(&time, &time);
-      //strcpy(shared_mem, outte);
-      //printf("shm mem: %s\n", shared_mem);
-    }
+
+  while(lol) {
+    write(newsockdes, lol, strlen(lol)+1);// read(newsockdes, in, 256))
+    printf("sending to [%d]:%s \n", getpid(),lol);
+    lol = strsep(&outte," ");
+    //      printf("sending to [%d]:%s \n", getpid(),lol);
+    // if(!lol)
+    //break;
+    nanosleep(&time, &time);
+    //strcpy(shared_mem, outte);
+    //printf("shm mem: %s\n", shared_mem);
+  }
   shmdt(shared_mem);
   shmctl(shm_fd, IPC_RMID, NULL);
   //fflush(stdout);
