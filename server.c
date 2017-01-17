@@ -12,15 +12,36 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <signal.h>
+
+int shm_fd = -1;
+char* shared_mem;
 
 errorhandle(char* from) {
   printf("\nError in %s: %s.\n", from, strerror(errno));
   exit(errno);
 }
 
-int main() {
-  int sockdes,newsockdes;
+void sighandler(int sig) {
+  if(sig == SIGINT || sig == SIGTERM || sig == SIGQUIT) {
+    if(shm_fd != -1) {
+      shmdt(shared_mem);
+      shmctl(shm_fd, IPC_RMID, NULL);
+      printf("Shared memory deleted.");
+    }
+    signal(sig, SIG_DFL);
+    printf("Reraising sig %s.", strsignal(sig));
+    raise(sig);
+    exit(sig);
+  }
+}
 
+int main() {
+  signal(SIGINT, sighandler);
+  signal(SIGTERM, sighandler);
+  signal(SIGQUIT, sighandler);
+
+  int sockdes,newsockdes;
   struct sockaddr_in serv_addr, cli_addr;
   sockdes = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -38,8 +59,6 @@ int main() {
   printf("listening for connections\n");
   socklen_t cli_len = sizeof(cli_addr);
 
-  int shm_fd;
-  char* shared_mem;
   //int msize; // the size (in bytes) of the shared memory segment
   //const char *name = "questions";
   int key = 123456;
@@ -50,20 +69,20 @@ int main() {
 
   //outte = shared_mem;
 
- while(1) {
-  newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
-  if(newsockdes < 0)
-    errorhandle("accept");
-  if(newsockdes!=-1) {
-    if(!fork()) {
-      //      printf("shm mem: %s\n", shared_mem);
-      //      printf("outte: %s\n",outte);
-      //    if(shared_mem)
-      //strcpy(outte, shared_mem);
-      break;
+  while(1) {
+    newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
+    if(newsockdes < 0)
+      errorhandle("accept");
+    if(newsockdes!=-1) {
+      if(!fork()) {
+        //      printf("shm mem: %s\n", shared_mem);
+        //      printf("outte: %s\n",outte);
+        //    if(shared_mem)
+        //strcpy(outte, shared_mem);
+        break;
+      }
     }
   }
-}
 
  //child process
   printf("found connection from [%d]\n",getpid());
@@ -87,9 +106,11 @@ int main() {
 
   struct timespec time;
   time.tv_nsec = 300000000;
+  time.tv_sec = 0;
 
   while(lol) {
-    write(newsockdes, lol, strlen(lol)+1);// read(newsockdes, in, 256))
+    if(write(newsockdes, lol, strlen(lol)+1) == -1)
+      errorhandle("write");// read(newsockdes, in, 256))
     printf("sending to [%d]:%s \n", getpid(),lol);
     lol = strsep(&outte," ");
     //      printf("sending to [%d]:%s \n", getpid(),lol);
