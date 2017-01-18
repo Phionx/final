@@ -61,70 +61,77 @@ int main() {
 
   //int msize; // the size (in bytes) of the shared memory segment
   //const char *name = "questions";
-  int key = 123456;
-  shm_fd = shmget(key, 1, IPC_CREAT | 0666);
-  shared_mem = (char* )shmat(shm_fd, NULL, 0);
+  //int key = 123456;
+  //shm_fd = shmget(key, 1, IPC_CREAT | 0666);
+  //shared_mem = (char* )shmat(shm_fd, NULL, 0);
+  int fdinfo[2];
+  pipe(fdinfo);
+  printf("%d %d\n",fdinfo[0], fdinfo[1]);
 
-
-
-  //outte = shared_mem;
-
-  while(1) {
-    newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
-    if(newsockdes < 0)
-      errorhandle("accept");
-    if(newsockdes!=-1) {
-      if(!fork()) {
-        //      printf("shm mem: %s\n", shared_mem);
-        //      printf("outte: %s\n",outte);
-        //    if(shared_mem)
-        //strcpy(outte, shared_mem);
-        break;
-      }
-    }
-  }
-
- //child process
-  printf("found connection from [%d]\n",getpid());
-  char in[256];//, out[];
-
-  shm_fd = shmget(123456, 1, 0666);
-  shared_mem = (char *) shmat(shm_fd, NULL, 0);
-  printf("shm_mem: %s \n",shared_mem);
-
-  char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins. ";
+    char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins. ";
 
   char *outte = out;
-  /*
-  if(shared_mem){
-    strcpy(outte,shared_mem);
-  }
-*/
-  printf("%s\n",outte);
-  char *lol = strsep(&outte," ");
-  //  printf("lol: %s\n",lol);
 
-  struct timespec time;
-  time.tv_nsec = 300000000;
-  time.tv_sec = 0;
+  char *lol;
 
-  while(lol) {
-    if(write(newsockdes, lol, strlen(lol)+1) == -1)
-      errorhandle("write");// read(newsockdes, in, 256))
-    printf("sending to [%d]:%s \n", getpid(),lol);
-    lol = strsep(&outte," ");
-    //      printf("sending to [%d]:%s \n", getpid(),lol);
-    // if(!lol)
-    //break;
-    nanosleep(&time, &time);
-    //strcpy(shared_mem, outte);
-    //printf("shm mem: %s\n", shared_mem);
+  //outte = shared_mem;
+  int start = 0;
+  while(1) {
+    newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
+    
+    printf("%d\n",start);
+    if(newsockdes == -1)
+      errorhandle("accept");
+    else {
+      start = 1;
+      if(!fork()) {
+	//child
+	char in[256];//, out[];
+	read(fdinfo[0],in,256);
+	printf("found connection from [%d]\n",getpid());
+	while(write(newsockdes, in, strlen(in)+1)){
+	  
+	  //	printf("shm_mem: %s \n",shared_mem);
+	  //     write(newsockdes, in, strlen(lol)+1);
+	  //   if(write(newsockdes, in, strlen(lol)+1) == -1)
+	  //errorhandle("write");// read(newsockdes, in, 256))
+	  read(fdinfo[0],in,256);
+	  printf("sending to [%d]:%s \n", getpid(),in);	  
+	}
+	
+	printf("ended\n");
+	printf("[%d] disconnected\n",getpid());
+	close(newsockdes);
+	return 0;
+	//break;
+      } 
+    }
+    if(start) {
+      //parent
+      printf("ok\n");
+      lol = strsep(&outte," ");
+      write(fdinfo[1],lol,strlen(lol)+1);
+	 
+      struct timespec time;
+      time.tv_nsec = 300000000;
+      time.tv_sec = 0;
+      /*
+	while(lol) {
+	if(write(newsockdes, lol, strlen(lol)+1) == -1)
+	  errorhandle("write");// read(newsockdes, in, 256))
+	printf("sending to [%d]:%s \n", getpid(),lol);
+	lol = strsep(&outte," ");
+	//      printf("sending to [%d]:%s \n", getpid(),lol);
+	// if(!lol)
+	//break;*/
+      nanosleep(&time, &time);
+	//strcpy(shared_mem, outte);
+    }
+	
+	//printf("shm mem: %s\n", shared_mem);
+   
   }
-  shmdt(shared_mem);
-  shmctl(shm_fd, IPC_RMID, NULL);
-  //fflush(stdout);
-  printf("ended\n");
-  printf("[%d] disconnected\n",getpid());
-  close(newsockdes);
+
+  printf("how the fuck\n");
   return 0;
 }
