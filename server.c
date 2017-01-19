@@ -14,14 +14,14 @@
 #include <errno.h>
 #include <signal.h>
 
-int shm_fd = -1;
-char* shared_mem;
+//int shm_fd = -1;
+//char* shared_mem;
 
 errorhandle(char* from) {
   printf("\nError in %s: %s.\n", from, strerror(errno));
   exit(errno);
 }
-
+/*
 void sighandler(int sig) {
   if(sig == SIGINT || sig == SIGTERM || sig == SIGQUIT) {
     if(shm_fd != -1) {
@@ -35,11 +35,12 @@ void sighandler(int sig) {
     exit(sig);
   }
 }
+*/
 
 int main() {
-  signal(SIGINT, sighandler);
-  signal(SIGTERM, sighandler);
-  signal(SIGQUIT, sighandler);
+//  signal(SIGINT, sighandler);
+//  signal(SIGTERM, sighandler);
+//  signal(SIGQUIT, sighandler);
 
   int sockdes,newsockdes;
   struct sockaddr_in serv_addr, cli_addr;
@@ -76,61 +77,72 @@ int main() {
 
   //outte = shared_mem;
   int start = 0;
-  while(1) {
-    newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
-    
-    printf("%d\n",start);
-    if(newsockdes == -1)
-      errorhandle("accept");
-    else {
-      start = 1;
-      if(!fork()) {
+  if(fork()){
+    while(1) {
+     
+      newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
+      printf("%d\n",start);
+      if(newsockdes == -1)
+	errorhandle("accept");
+      else {
+	write(fdinfo[1],"hi",3);
+	if(!fork()) {
 	//child
-	char in[256];//, out[];
-	read(fdinfo[0],in,256);
-	printf("found connection from [%d]\n",getpid());
-	while(write(newsockdes, in, strlen(in)+1)){
-	  
-	  //	printf("shm_mem: %s \n",shared_mem);
-	  //     write(newsockdes, in, strlen(lol)+1);
+	  char in[256];//, out[];
+	  read(fdinfo[0],in,256);
+	  write(fdinfo[1],in,strlen(in)+1);
+	  printf("found connection from [%d]\n",getpid());
+	  while(write(newsockdes, in, strlen(in)+1)){
+	    
+	    //	printf("shm_mem: %s \n",shared_mem);
+	    //     write(newsockdes, in, strlen(lol)+1);
 	  //   if(write(newsockdes, in, strlen(lol)+1) == -1)
 	  //errorhandle("write");// read(newsockdes, in, 256))
-	  read(fdinfo[0],in,256);
-	  printf("sending to [%d]:%s \n", getpid(),in);	  
-	}
-	
-	printf("ended\n");
-	printf("[%d] disconnected\n",getpid());
-	close(newsockdes);
-	return 0;
+	    read(fdinfo[0],in,256);
+
+	    printf("sending to [%d]:%s \n", getpid(),in);	  
+	  }
+	  
+	  printf("ended\n");
+	  printf("[%d] disconnected\n",getpid());
+	  close(newsockdes);
+	  return 0;
 	//break;
-      } 
+	} 
+      }
     }
-    if(start) {
-      //parent
-      printf("ok\n");
-      lol = strsep(&outte," ");
-      write(fdinfo[1],lol,strlen(lol)+1);
-	 
-      struct timespec time;
-      time.tv_nsec = 300000000;
-      time.tv_sec = 0;
-      /*
+  }
+  else{
+    while(1){
+      char in[256];
+      read(fdinfo[0],in,256);
+      while(!strcmp(in,"hi")) {
+	//parent
+	printf("ok\n");
+	lol = strsep(&outte," ");
+	write(fdinfo[1],lol,strlen(lol)+1);
+	
+	struct timespec time;
+	time.tv_nsec = 300000000;
+	time.tv_sec = 0;
+	/*
 	while(lol) {
 	if(write(newsockdes, lol, strlen(lol)+1) == -1)
-	  errorhandle("write");// read(newsockdes, in, 256))
+	errorhandle("write");// read(newsockdes, in, 256))
 	printf("sending to [%d]:%s \n", getpid(),lol);
 	lol = strsep(&outte," ");
 	//      printf("sending to [%d]:%s \n", getpid(),lol);
 	// if(!lol)
 	//break;*/
-      nanosleep(&time, &time);
+	nanosleep(&time, &time);
 	//strcpy(shared_mem, outte);
+      }
     }
+  }
 	
 	//printf("shm mem: %s\n", shared_mem);
    
-  }
+  
 
   printf("how the fuck\n");
   return 0;
