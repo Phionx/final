@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <sys/un.h>
 
 const int WAITING = 0;
 const int PLAYING = 1;
@@ -31,21 +32,8 @@ errorhandle(char* from) {
   printf("\nError in %s: %s.\n", from, strerror(errno));
   exit(errno);
 }
-/*
-void sighandler(int sig) {
-  if(sig == SIGINT || sig == SIGTERM || sig == SIGQUIT) {
-    if(shm_fd != -1) {
-      shmdt(shared_mem);
-      shmctl(shm_fd, IPC_RMID, NULL);
-      printf("Shared memory deleted.");
-    }
-    signal(sig, SIG_DFL);
-    printf("Reraising sig %s.", strsignal(sig));
-    raise(sig);
-    exit(sig);
-  }
-}
-*/
+
+
 void sighandler(int sig) {
   if(sig == SIGUSR1) {
     printf("Received SIGUSR1, killing socket and starting questions.");
@@ -91,10 +79,10 @@ int main() {
   signal(SIGUSR1, sighandler);
 
   int newsockdes;
+
   struct sockaddr_in serv_addr, cli_addr;
   sockdes = socket(AF_INET, SOCK_STREAM, 0);
 
-  bzero((char *) &serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
   serv_addr.sin_port = htons(9001);
@@ -104,7 +92,7 @@ int main() {
     errorhandle("bind");
   }
 
-  listen(sockdes, 5);
+  listen(sockdes,10);
   printf("listening for connections\n");
   socklen_t cli_len = sizeof(cli_addr);
 
@@ -176,8 +164,6 @@ int main() {
     runChild(sd, &outte);
   //printf("shm mem: %s\n", shared_mem);
 
-
-
-  printf("how the fuck\n");
+  printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
   return 0;
 }
