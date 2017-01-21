@@ -13,15 +13,16 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <sys/un.h>
 
-//int shm_fd = -1;
-//char* shared_mem;
+int shm_fd = -1;
+char* shared_mem;
 
 errorhandle(char* from) {
   printf("\nError in %s: %s.\n", from, strerror(errno));
   exit(errno);
 }
-/*
+
 void sighandler(int sig) {
   if(sig == SIGINT || sig == SIGTERM || sig == SIGQUIT) {
     if(shm_fd != -1) {
@@ -35,18 +36,16 @@ void sighandler(int sig) {
     exit(sig);
   }
 }
-*/
 
 int main() {
-//  signal(SIGINT, sighandler);
-//  signal(SIGTERM, sighandler);
-//  signal(SIGQUIT, sighandler);
+  signal(SIGINT, sighandler);
+  signal(SIGTERM, sighandler);
+  signal(SIGQUIT, sighandler);
 
-  int sockdes,newsockdes;
+  int sockdes,newsockdes, localsd;
   struct sockaddr_in serv_addr, cli_addr;
   sockdes = socket(AF_INET, SOCK_STREAM, 0);
 
-  bzero((char *) &serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
   serv_addr.sin_port = htons(9001);
@@ -56,7 +55,7 @@ int main() {
     errorhandle("bind");
   }
 
-  listen(sockdes,5);
+  listen(sockdes,10);
   printf("listening for connections\n");
   socklen_t cli_len = sizeof(cli_addr);
 
@@ -65,85 +64,95 @@ int main() {
   //int key = 123456;
   //shm_fd = shmget(key, 1, IPC_CREAT | 0666);
   //shared_mem = (char* )shmat(shm_fd, NULL, 0);
-  int fdinfo[2];
-  pipe(fdinfo);
-  printf("%d %d\n",fdinfo[0], fdinfo[1]);
+  // if(access("sock", F_OK) == -1) {
+  //   int sdlocal = socket(AF_UNIX, SOCK_STREAM, 0);  // local socket for ipc
 
-    char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins. ";
+  //
+  //   if(bind(sdlocal, (struct sockaddr *) &local_addr, sizeof(local_addr)) < 0) {
+  //     errorhandle("local bind");
+  //   }
+  // }
+  // int localsock = open("sock", O_RDWR);
+  int localsock[2];
+  socketpair(PF_LOCAL, SOCK_STREAM, 0, localsock);
+  int parentsock = localsock[0];
+  int childsock = localsock[1];\
+
+  struct sockaddr_un local_addr;
+  local_addr.sun_family = AF_UNIX;
+  strcpy(local_addr.sun_path, "sock");
+
+  char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins. ";
 
   char *outte = out;
 
   char *lol;
 
   //outte = shared_mem;
-  int start = 0;
-  if(fork()){
+  // int start = 0;
+  int f = fork();
+  if(!f) {  // this fork runs the accept loop
+    close(parentsock);
     while(1) {
-     
       newsockdes = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len);
-      printf("%d\n",start);
+      // printf("%d\n",start);
       if(newsockdes == -1)
-	errorhandle("accept");
+        errorhandle("accept");
       else {
-	write(fdinfo[1],"hi",3);
-	if(!fork()) {
-	//child
-	  char in[256];//, out[];
-	  read(fdinfo[0],in,256);
-	  write(fdinfo[1],in,strlen(in)+1);
-	  printf("found connection from [%d]\n",getpid());
-	  while(write(newsockdes, in, strlen(in)+1)){
-	    
-	    //	printf("shm_mem: %s \n",shared_mem);
-	    //     write(newsockdes, in, strlen(lol)+1);
-	  //   if(write(newsockdes, in, strlen(lol)+1) == -1)
-	  //errorhandle("write");// read(newsockdes, in, 256))
-	    read(fdinfo[0],in,256);
+        // start = 1;
+        if(!fork()) {
+          connect(childsock, (struct sockaddr *)&local_addr, sizeof(local_addr));
+        	//child
+        	char in[256];//, out[];
+        	//connect(sdlocal, (struct sockaddr *) &serv_addr,sizeof(serv_addr));
+        	printf("found connection from [%d]\n",getpid());
+        	while(write(newsockdes, in, strlen(in)+1)){
+        	  //	printf("shm_mem: %s \n",shared_mem);
+        	  //     write(newsockdes, in, strlen(lol)+1);
+        	  //   if(write(newsockdes, in, strlen(lol)+1) == -1)
+        	  //errorhandle("write");// read(newsockdes, in, 256))
+        	  if(read(childsock,in,256) == -1) {
+              continue;
+            }
+        	  printf("sending to [%d]:%s \n", getpid(),in);
+        	}
 
-	    printf("sending to [%d]:%s \n", getpid(),in);	  
-	  }
-	  
-	  printf("ended\n");
-	  printf("[%d] disconnected\n",getpid());
-	  close(newsockdes);
-	  return 0;
-	//break;
-	} 
+        	printf("ended\n");
+        	printf("[%d] disconnected\n",getpid());
+        	close(newsockdes);
+        	return 0;
+        	//break;
+        }
       }
     }
   }
-  else{
-    while(1){
-      char in[256];
-      read(fdinfo[0],in,256);
-      while(!strcmp(in,"hi")) {
-	//parent
-	printf("ok\n");
-	lol = strsep(&outte," ");
-	write(fdinfo[1],lol,strlen(lol)+1);
-	
-	struct timespec time;
-	time.tv_nsec = 300000000;
-	time.tv_sec = 0;
-	/*
+  else {
+    listen(parentsock, 10);
+    close(childsock);
+    while(1) {
+      //parent
+      printf("ok\n");
+      lol = strsep(&outte," ");
+      write(parentsock,lol,strlen(lol)+1);
+
+      struct timespec time;
+      time.tv_nsec = 300000000;
+      time.tv_sec = 0;
+      nanosleep(&time, &time);
+    }
+  }
+      /*
 	while(lol) {
 	if(write(newsockdes, lol, strlen(lol)+1) == -1)
-	errorhandle("write");// read(newsockdes, in, 256))
+	  errorhandle("write");// read(newsockdes, in, 256))
 	printf("sending to [%d]:%s \n", getpid(),lol);
 	lol = strsep(&outte," ");
 	//      printf("sending to [%d]:%s \n", getpid(),lol);
 	// if(!lol)
 	//break;*/
-	nanosleep(&time, &time);
 	//strcpy(shared_mem, outte);
-      }
-    }
-  }
-	
 	//printf("shm mem: %s\n", shared_mem);
-   
-  
 
-  printf("how the fuck\n");
+  printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
   return 0;
 }
