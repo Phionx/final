@@ -56,9 +56,11 @@ runParent(int nChild, int *children) {
   }
 }
 
-runChild(int sd, char **question) {  // must be ** for strsep
+runChild(int sd, char **question, char **answers) {  // must be ** for strsep
   int amtTime = 1000;
   char *word;
+  char readBuf[256];
+  char writeBuf[256];
   printf("Running child...\n");
   while(NULL != (word = strsep(question, " "))) {
     while(!timePassed(starttime, amtTime)) {
@@ -68,7 +70,40 @@ runChild(int sd, char **question) {  // must be ** for strsep
     printf("Sending child word %s...", word);
     if(write(sd, word, 256) == -1)
       break;
+    if(read(sd, readBuf, 2) != -1) {
+      write(sd, "\x03", 2);
+      setBlocking(sd, 1);
+      read(sd, readBuf, 256);
+      printf("Read answer %s", readBuf);
+      int correct = 0;
+      for(; answers != 0 && *answers != NULL; answers++) {
+        printf("Answer: %s", *answers);
+        if(!strcmp(*answers, readBuf)) {
+          printf("ANSWER %s MATCHES", readBuf);
+          correct = 1;
+          break;
+        }
+      }
+      printf("Escaped the forloop of death\n");
+      if(correct) {
+        printf("Answer correct\n");
+        write(sd, "\x01", 2);
+      }
+      else {
+        printf("Answer wrong\n");
+        write(sd, "\x00", 2);
+      }
+      return;
+    }
   }
+}
+
+setBlocking(int fd, int blocking) {
+  int flags = fcntl(fd, F_GETFL, 0);
+  if(blocking)
+    fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);  // make reading from sd blocking
+  else
+    fcntl(fd, F_SETFL, flags |  O_NONBLOCK);
 }
 
 int main() {
@@ -103,6 +138,10 @@ int main() {
   //shared_mem = (char* )shmat(shm_fd, NULL, 0);
 
   char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins. ";
+  char *answers[5] = {
+    "IDK", "the", "real", "answer"
+  };
+  answers[4] = 0;
   // temp, later we will read from file
   char *outte = out;
 
@@ -133,6 +172,7 @@ int main() {
           exit(1);
         }
       }
+      setBlocking(sd, 0);
       printf("%d\n", start);
       int childpid = fork();
       if (childpid) {  // parent
@@ -161,7 +201,7 @@ int main() {
   if(isMaster)
     runParent(numPlayers, children);
   else
-    runChild(sd, &outte);
+    runChild(sd, &outte, answers);
   //printf("shm mem: %s\n", shared_mem);
 
   printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
