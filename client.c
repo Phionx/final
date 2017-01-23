@@ -6,12 +6,13 @@
 #include <netdb.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/sem.h>
 
 int main() {
   struct sockaddr_in serv_addr;
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(9001);
+  serv_addr.sin_port = htons(7001);
 
   int sock = socket(AF_INET, SOCK_STREAM,0);
   connect(sock, (struct sockaddr *) &serv_addr,sizeof(serv_addr));
@@ -34,7 +35,17 @@ int main() {
   }
   else {  // parent; waits for enter to stop child reading
     char temp[256];
-    fgets(temp, 2, stdin);
+    //    int semid = semget(123456,0,0);
+
+    fgets(temp, 2, stdin);    
+    /*
+    struct sembuf ops;                                                                                                                                                      
+    ops.sem_num = 1;                                                                                                                                                        
+    ops.sem_op = -1;                                                                                                                                                        
+    ops.sem_flg = IPC_NOWAIT;                                                                                                                                               
+    semop(semid,&ops,1);                                                                                                                                                    
+    printf("sem val: %d\n",semctl(semid,0,GETVAL)); 
+    */
     kill(f, 9);
     write(sock, "\x02", 2);
     read(sock, temp, 256);  // clear last answer
