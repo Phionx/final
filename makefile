@@ -1,10 +1,12 @@
+CC=gcc -g
+
 all: server client
 
 server: server.c
-	gcc server.c -o server.out
+	$(CC) server.c -o server.out
 
 client: client.c
-	gcc client.c -o client.out
+	$(CC) client.c -o client.out
 
 clean:
 	-rm *.out *.o

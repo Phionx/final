@@ -156,10 +156,11 @@ setBlocking(int fd, int blocking) {
     fcntl(fd, F_SETFL, flags |  O_NONBLOCK);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
 //  signal(SIGINT, sighandler);
 //  signal(SIGTERM, sighandler);
 //  signal(SIGQUIT, sighandler);
+  
   setbuf(stdout, NULL);
   signal(SIGUSR1, sighandler);
   signal(SIGINT, sighandler);

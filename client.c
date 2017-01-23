@@ -7,11 +7,18 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/sem.h>
+#include <arpa/inet.h>
 
-int main() {
+int main(int argc, char *argv[]) {
+  if(argc < 2) {
+    printf("USAGE: ./client.out <IP>\n");
+    return 1;
+  }
+  char *ip = argv[1];
+
   struct sockaddr_in serv_addr;
   serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
+  inet_aton(ip, &serv_addr.sin_addr);
   serv_addr.sin_port = htons(7001);
 
   int sock = socket(AF_INET, SOCK_STREAM,0);
