@@ -83,74 +83,40 @@ runParent(int nChild, int *children) {
   }
 }
 
-runChild(int sd, char **question, char **answers) {  // must be ** for strsep
-  int amtTime = 1000;
-  char *word;
+char *tick(int sd, char *word) {  // must be ** for strsep
   char readBuf[256];
   char writeBuf[256];
 
-  int semid = semget(123456,0,0);
-  printf("semid: %d\n",semid);
+  // int semid = semget(123456,0,0);
+  // printf("semid: %d\n",semid);
 
-  printf("sem val : %d\n",semctl(semid,0,GETVAL));
-  printf("Running child...\n");
-  while(NULL != (word = strsep(question, " "))) {
-    while(!timePassed(starttime, amtTime)) {
-      sleep(0.01);
+  //printf("Sending child word %s...", word);
+  //char zero[1] = "";
+  // if(write(sd, NULL, 0) == -1) break;
+  if(semctl(semid,0,GETVAL) == 1){
+    if(write(sd, word, 256) == -1)
+     return 1;
+  }
+  if(read(sd, readBuf, 2) != -1) {
+    if(!strcmp(readBuf, "\x04")) {
+      return 1;
     }
-    amtTime += 300;  // 300 ms between each word
-    printf("Sending child word %s...", word);
-    //char zero[1] = "";
-    // if(write(sd, NULL, 0) == -1) break;
-    if(semctl(semid,0,GETVAL) == 1){
-      if(write(sd, word, 256) == -1)
-	     return 1;
+    else if(semctl(semid,0,GETVAL)==1) {
+      if(!strcmp(readBuf, "\x02")) {
+        struct sembuf ops;
+        ops.sem_num = 0;
+        ops.sem_op = -1;
+        ops.sem_flg = IPC_NOWAIT;
+        semop(semid,&ops,1);
+        printf("sem val: %d\n",semctl(semid,0,GETVAL));
+
+        write(sd, "\x03", 2);
+        setBlocking(sd, 1);
+        read(sd, readBuf, 256);
+        setBlocking(sd, 0);
+        return readBuf;
+	    }
     }
-    if(read(sd, readBuf, 2) != -1) {
-      if(!strcmp(readBuf, "\x04")) {
-        return 1;
-      }
-      else if(semctl(semid,0,GETVAL)==1) {
-        if(!strcmp(readBuf, "\x02")) {
-          struct sembuf ops;
-          ops.sem_num = 0;
-          ops.sem_op = -1;
-          ops.sem_flg = IPC_NOWAIT;
-          semop(semid,&ops,1);
-          printf("sem val: %d\n",semctl(semid,0,GETVAL));
-
-          write(sd, "\x03", 2);
-          setBlocking(sd, 1);
-          read(sd, readBuf, 256);
-          setBlocking(sd, 0);
-          printf("Read answer %s", readBuf);
-          int correct = 0;
-          for(; answers != 0 && *answers != NULL; answers++) {
-            printf("Answer: %s", *answers);
-            if(!strcmp(*answers, readBuf)) {
-              printf("ANSWER %s MATCHES", readBuf);
-              correct = 1;
-              //  break;
-            }
-          }
-
-      	  printf("Escaped the forloop of death\n");
-      	  if(correct) {
-      	    printf("Answer correct\n");
-      	    write(sd, "\x01", 2);
-      	  }
-      	  else {
-      	    printf("Answer wrong\n");
-      	    write(sd, "\x00", 2);
-
-      	 	    ops.sem_op = 1;
-      	    semop(semid,&ops,1);
-      	  }
-      	  //	  return;
-        }
-    	}
-    }
-    printf("sem val : %d\n",semctl(semid,0,GETVAL));
   }
   return 0;
 }
@@ -223,6 +189,7 @@ int main(int argc, char *argv[]) {
   int f = fork();  // parent gets new clients, child waits for input
   int isMaster = 1;
   int sd = -1;
+  int sds[10];
   if(f) {
     while (1) {
       if(-1 == (sd = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len))) {
@@ -235,21 +202,8 @@ int main(int argc, char *argv[]) {
           exit(1);
         }
       }
+      sds[numPlayers++] = sd;
       setBlocking(sd, 0);
-      printf("%d\n", start);
-      int childpid = fork();
-      if (childpid) {  // parent
-        children[numPlayers++] = childpid;
-        printf(" player %d joined.\n", numPlayers);
-      }
-      else {  //child
-        isMaster = 0;
-        printf("Waiting for game start signal...\n");
-        pause();  // wait for SIGUSR1
-        printf("Game is starting.\n");
-        break;
-      }
-
     }
   }
   else {
@@ -260,22 +214,24 @@ int main(int argc, char *argv[]) {
     exit(0);  // job done, parent now has all children and can continue
 
   }
-
-  if(isMaster) {
-    runParent(numPlayers, children);
-    while(1) {
-      sleep(1);
+  int i;
+  semid = semget(123456,0,0);
+  while(1) {
+    word = strsep(&outte, " ");
+    sleep(.03);
+    for(i = 0; i < numPlayers; i++) {
+      sd = sds[i];
+      if(sd != -1) {
+        char *rv = tick(sd, word);
+        if(rv == 1) {
+          sds[i] = -1;
+        }
+        if(rv > 2) {
+          //checkAnswer(sd, rv);
+        }
+      }
+      //printf("shm mem: %s\n", shared_mem);
     }
-  }
-  else{
-    if(!runChild(sd, &outte, answers)) {
-      printf("Executing ipcrm");
-      char semidStr[20];
-      sprintf(semidStr, "%d", semid);
-      execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
-    }
-    //printf("shm mem: %s\n", shared_mem);
-  }
   printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
   return 0;
 }
