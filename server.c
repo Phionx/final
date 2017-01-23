@@ -60,7 +60,7 @@ void sighandler(int sig) {
     char semidStr[20];
     sprintf(semidStr, "%d", semid);
     printf("Executing ipcrm");
-    execlp("ipcrm", "ipcrm", "-s", semidStr);
+    execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
     exit(sig);
   }
   /*  if(sig = SIGUSR2)
@@ -104,11 +104,11 @@ runChild(int sd, char **question, char **answers) {  // must be ** for strsep
     // if(write(sd, NULL, 0) == -1) break;
     if(semctl(semid,0,GETVAL) == 1){
       if(write(sd, word, 256) == -1)
-	     break;
+	     return 1;
     }
     if(read(sd, readBuf, 2) != -1) {
       if(!strcmp(readBuf, "\x04")) {
-        return 0;
+        return 1;
       }
       else if(semctl(semid,0,GETVAL)==1) {
         if(!strcmp(readBuf, "\x02")) {
@@ -152,6 +152,7 @@ runChild(int sd, char **question, char **answers) {  // must be ** for strsep
     }
     printf("sem val : %d\n",semctl(semid,0,GETVAL));
   }
+  return 0;
 }
 
 setBlocking(int fd, int blocking) {
@@ -260,15 +261,19 @@ int main(int argc, char *argv[]) {
 
   }
 
-  if(isMaster)
-      runParent(numPlayers, children);
+  if(isMaster) {
+    runParent(numPlayers, children);
+    while(1) {
+      sleep(1);
+    }
+  }
   else{
-    runChild(sd, &outte, answers);
-    printf("Executing ipcrm");
-    char semidStr[20];
-    sprintf(semidStr, "%d", semid);
-    execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
-    printf("Semaphore killed by exiting child\n");
+    if(!runChild(sd, &outte, answers)) {
+      printf("Executing ipcrm");
+      char semidStr[20];
+      sprintf(semidStr, "%d", semid);
+      execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
+    }
     //printf("shm mem: %s\n", shared_mem);
   }
   printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
