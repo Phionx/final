@@ -9,19 +9,28 @@
 #include <sys/sem.h>
 #include <arpa/inet.h>
 
+int sock;
+
+void sighandler(int sig) {
+  if(sig == SIGINT) {
+    write(sock, "\x04", 2);
+    exit(SIGINT);
+  }
+}
+
 int main(int argc, char *argv[]) {
   if(argc < 2) {
     printf("USAGE: ./client.out <IP>\n");
     return 1;
   }
   char *ip = argv[1];
-
+  signal(SIGINT, sighandler);
   struct sockaddr_in serv_addr;
   serv_addr.sin_family = AF_INET;
   inet_aton(ip, &serv_addr.sin_addr);
   serv_addr.sin_port = htons(7001);
 
-  int sock = socket(AF_INET, SOCK_STREAM,0);
+  sock = socket(AF_INET, SOCK_STREAM,0);
   connect(sock, (struct sockaddr *) &serv_addr,sizeof(serv_addr));
   char in[256], out[256];
   int f = fork();
@@ -44,14 +53,14 @@ int main(int argc, char *argv[]) {
     char temp[256];
     //    int semid = semget(123456,0,0);
 
-    fgets(temp, 2, stdin);    
+    fgets(temp, 2, stdin);
     /*
-    struct sembuf ops;                                                                                                                                                      
-    ops.sem_num = 1;                                                                                                                                                        
-    ops.sem_op = -1;                                                                                                                                                        
-    ops.sem_flg = IPC_NOWAIT;                                                                                                                                               
-    semop(semid,&ops,1);                                                                                                                                                    
-    printf("sem val: %d\n",semctl(semid,0,GETVAL)); 
+    struct sembuf ops;
+    ops.sem_num = 1;
+    ops.sem_op = -1;
+    ops.sem_flg = IPC_NOWAIT;
+    semop(semid,&ops,1);
+    printf("sem val: %d\n",semctl(semid,0,GETVAL));
     */
     kill(f, 9);
     write(sock, "\x02", 2);

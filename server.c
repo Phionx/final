@@ -57,8 +57,10 @@ void sighandler(int sig) {
     return;
   }
   if(sig == SIGINT) {
-    semctl(semid,0,IPC_RMID);
-    printf("Removing semaphore through sigint\n");
+    char semidStr[20];
+    sprintf(semidStr, "%d", semid);
+    printf("Executing ipcrm");
+    execlp("ipcrm", "ipcrm", "-s", semidStr);
     exit(sig);
   }
   /*  if(sig = SIGUSR2)
@@ -98,57 +100,57 @@ runChild(int sd, char **question, char **answers) {  // must be ** for strsep
     }
     amtTime += 300;  // 300 ms between each word
     printf("Sending child word %s...", word);
-    char zero[1] = "";
-    if(write(sd, zero, 1) == -1) break;
+    //char zero[1] = "";
+    // if(write(sd, NULL, 0) == -1) break;
     if(semctl(semid,0,GETVAL) == 1){
       if(write(sd, word, 256) == -1)
 	     break;
     }
     if(read(sd, readBuf, 2) != -1) {
-      if(semctl(semid,0,GETVAL)==1)
-	{
-	  struct sembuf ops;
-	  ops.sem_num = 0;
-	  ops.sem_op = -1;
-	  ops.sem_flg = IPC_NOWAIT;
-	  semop(semid,&ops,1);
-	  printf("sem val: %d\n",semctl(semid,0,GETVAL));
+      if(!strcmp(readBuf, "\x04")) {
+        return 0;
+      }
+      else if(semctl(semid,0,GETVAL)==1) {
+        if(!strcmp(readBuf, "\x02")) {
+          struct sembuf ops;
+          ops.sem_num = 0;
+          ops.sem_op = -1;
+          ops.sem_flg = IPC_NOWAIT;
+          semop(semid,&ops,1);
+          printf("sem val: %d\n",semctl(semid,0,GETVAL));
 
-	  write(sd, "\x03", 2);
-	  setBlocking(sd, 1);
-	  read(sd, readBuf, 256);
-      setBlocking(sd, 0);
-	  printf("Read answer %s", readBuf);
-	  int correct = 0;
-	  for(; answers != 0 && *answers != NULL; answers++) {
-	    printf("Answer: %s", *answers);
-	    if(!strcmp(*answers, readBuf)) {
-	      printf("ANSWER %s MATCHES", readBuf);
-	      correct = 1;
-	      //  break;
-	    }
-	  }
+          write(sd, "\x03", 2);
+          setBlocking(sd, 1);
+          read(sd, readBuf, 256);
+          setBlocking(sd, 0);
+          printf("Read answer %s", readBuf);
+          int correct = 0;
+          for(; answers != 0 && *answers != NULL; answers++) {
+            printf("Answer: %s", *answers);
+            if(!strcmp(*answers, readBuf)) {
+              printf("ANSWER %s MATCHES", readBuf);
+              correct = 1;
+              //  break;
+            }
+          }
 
-	  printf("Escaped the forloop of death\n");
-	  if(correct) {
-	    printf("Answer correct\n");
-	    write(sd, "\x01", 2);
-	  }
-	  else {
-	    printf("Answer wrong\n");
-	    write(sd, "\x00", 2);
+      	  printf("Escaped the forloop of death\n");
+      	  if(correct) {
+      	    printf("Answer correct\n");
+      	    write(sd, "\x01", 2);
+      	  }
+      	  else {
+      	    printf("Answer wrong\n");
+      	    write(sd, "\x00", 2);
 
-	 	    ops.sem_op = 1;
-	    semop(semid,&ops,1);
-	  }
-	  //	  return;
-	}
-      else{
-	  write(sd, "cannot answer",14);
-	}
-
+      	 	    ops.sem_op = 1;
+      	    semop(semid,&ops,1);
+      	  }
+      	  //	  return;
+        }
+    	}
     }
-      printf("sem val : %d\n",semctl(semid,0,GETVAL));
+    printf("sem val : %d\n",semctl(semid,0,GETVAL));
   }
 }
 
@@ -189,8 +191,6 @@ int main(int argc, char *argv[]) {
   //int msize; // the size (in bytes) of the shared memory segment
   //const char *name = "questions";
   //int key = 123456;
-  //shm_fd = shmget(key, 1, IPC_CREAT | 0666);
-  //shared_mem = (char* )shmat(shm_fd, NULL, 0);
 
   char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins. ";
   char *answers[5] = {
@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
         pause();  // wait for SIGUSR1
         printf("Game is starting.\n");
         break;
-        }
+      }
 
     }
   }
@@ -264,7 +264,10 @@ int main(int argc, char *argv[]) {
       runParent(numPlayers, children);
   else{
     runChild(sd, &outte, answers);
-    semctl(semid,0,IPC_RMID);
+    printf("Executing ipcrm");
+    char semidStr[20];
+    sprintf(semidStr, "%d", semid);
+    execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
     printf("Semaphore killed by exiting child\n");
     //printf("shm mem: %s\n", shared_mem);
   }
