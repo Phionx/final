@@ -56,10 +56,11 @@ void sighandler(int sig) {
     clock_gettime(CLOCK_REALTIME, &starttime);
     return;
   }
-  if(sig == SIGINT)
-    {
-      semctl(semid,0,IPC_RMID);
-    }
+  if(sig == SIGINT) {
+    semctl(semid,0,IPC_RMID);
+    printf("Removing semaphore through sigint\n");
+    exit(sig);
+  }
   /*  if(sig = SIGUSR2)
     {
       state = WAITING;
@@ -85,7 +86,7 @@ runChild(int sd, char **question, char **answers) {  // must be ** for strsep
   char *word;
   char readBuf[256];
   char writeBuf[256];
-  
+
   int semid = semget(123456,0,0);
   printf("semid: %d\n",semid);
 
@@ -97,9 +98,11 @@ runChild(int sd, char **question, char **answers) {  // must be ** for strsep
     }
     amtTime += 300;  // 300 ms between each word
     printf("Sending child word %s...", word);
+    char zero[1] = "";
+    if(write(sd, zero, 1) == -1) break;
     if(semctl(semid,0,GETVAL) == 1){
-      if(write(sd, word, 256) == -1 && semctl(semid,0,GETVAL) == 1)
-	break;
+      if(write(sd, word, 256) == -1)
+	     break;
     }
     if(read(sd, readBuf, 2) != -1) {
       if(semctl(semid,0,GETVAL)==1)
@@ -110,10 +113,11 @@ runChild(int sd, char **question, char **answers) {  // must be ** for strsep
 	  ops.sem_flg = IPC_NOWAIT;
 	  semop(semid,&ops,1);
 	  printf("sem val: %d\n",semctl(semid,0,GETVAL));
-	  
+
 	  write(sd, "\x03", 2);
 	  setBlocking(sd, 1);
 	  read(sd, readBuf, 256);
+      setBlocking(sd, 0);
 	  printf("Read answer %s", readBuf);
 	  int correct = 0;
 	  for(; answers != 0 && *answers != NULL; answers++) {
@@ -124,7 +128,7 @@ runChild(int sd, char **question, char **answers) {  // must be ** for strsep
 	      //  break;
 	    }
 	  }
-	
+
 	  printf("Escaped the forloop of death\n");
 	  if(correct) {
 	    printf("Answer correct\n");
@@ -135,7 +139,7 @@ runChild(int sd, char **question, char **answers) {  // must be ** for strsep
 	    write(sd, "\x00", 2);
 
 	 	    ops.sem_op = 1;
-	    semop(semid,&ops,1);   
+	    semop(semid,&ops,1);
 	  }
 	  //	  return;
 	}
@@ -160,7 +164,7 @@ int main(int argc, char *argv[]) {
 //  signal(SIGINT, sighandler);
 //  signal(SIGTERM, sighandler);
 //  signal(SIGQUIT, sighandler);
-  
+
   setbuf(stdout, NULL);
   signal(SIGUSR1, sighandler);
   signal(SIGINT, sighandler);
@@ -205,7 +209,7 @@ int main(int argc, char *argv[]) {
   semctl(semid,0,SETVAL,arg);
   printf("sem val: %d\n",semctl(semid,0,GETVAL));
   //  union semun arg;
-  
+
   //outte = shared_mem;
   // delay.tv_nsec = 10000000;
   // delay.tv_sec = 0;
@@ -244,7 +248,7 @@ int main(int argc, char *argv[]) {
         printf("Game is starting.\n");
         break;
         }
-      
+
     }
   }
   else {
@@ -255,12 +259,13 @@ int main(int argc, char *argv[]) {
     exit(0);  // job done, parent now has all children and can continue
 
   }
-  
+
   if(isMaster)
       runParent(numPlayers, children);
   else{
     runChild(sd, &outte, answers);
     semctl(semid,0,IPC_RMID);
+    printf("Semaphore killed by exiting child\n");
     //printf("shm mem: %s\n", shared_mem);
   }
   printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
