@@ -125,28 +125,22 @@ char checkAnswer(char *answer, char *realAnswer) {
     return checkAnswer(answer, realAnswer);
 }
 
-sendScores(int *sds, unsigned long *scores) {
-  unsigned long evenScore, oddScore, i;
+sendScores(int *sds, int *scores) {
+  int evenScore, oddScore, i;
   evenScore = 0;
   oddScore = 0;
-  char toEven[256], toOdd[256];
-
+  char evenBuf[256], oddBuf[256];
   for(i = 0; i < 5; i++) {
     evenScore += scores[2 * i];
     oddScore += scores[2 * i + 1];
   }
-  toEven[0] = HEADER_SCORE;
-  *((unsigned long *)(toEven + 1)) = evenScore;
-  *((unsigned long *)(toEven + 1) + 1) = oddScore;
-  toOdd[0] = HEADER_SCORE;
-  *((unsigned long *)(toOdd + 1)) = oddScore;
-  *((unsigned long *)(toOdd + 1) + 1) = evenScore;
-
+  sprintf(evenBuf, "%c%d", HEADER_SCORE, evenScore);
+  sprintf(oddBuf, "%c%d", HEADER_SCORE, oddScore);
   for(i = 0; i < 5; i++) {
     if(sds[2 * i] != -1)
-      write(sds[2 * i], toEven, 256);
+      write(sds[2 * i], evenBuf, 256);
     if(sds[2 * i + 1] != -1)
-      write(sds[2 * i + 1], toOdd, 256);
+      write(sds[2 * i + 1], oddBuf, 256);
   }
 }
 
@@ -191,7 +185,7 @@ int main(int argc, char *argv[]) {
   game myGame;
   myGame = init(myGame);
   srand(time(NULL));
-  int rn = rand() % myGame.roundNum;
+  int rn = rand() % (myGame.roundNum - 1);
   round myRound = myGame.rounds[rn];
   question *questions = myRound.questions;
   int numQuestions = myRound.numberOfQuestions;
@@ -234,7 +228,7 @@ int main(int argc, char *argv[]) {
     exit(0);  // job done, parent now has all children and can continue
   }
   int i,j,k;
-  unsigned long scores[] = {0,0,0,0,0,0,0,0,0,0};
+  int scores[] = {0,0,0,0,0,0,0,0,0,0};
   //printf("sample question: %s", questions[5].tossUpQuestion);
   for(j = 0; j < numQuestions; j++) {
     //printf("IN da loop\n");
