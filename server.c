@@ -225,27 +225,29 @@ int main(int argc, char *argv[]) {
   int scores[] = {0,0,0,0,0,0,0,0,0,0};
   semid = semget(123456,0,0);
   while(outte && (word = strsep(&outte, " ")) != NULL) {
-    printf("Sending %s", word);
-    addHeader(headerWord, HEADER_WORD, word);
-    nanosleep(&delay, NULL);
-    for(i = 0; i < numPlayers; i++) {
-      sd = sds[i];
-      if(sd != -1) {
-        char *rv = tick(sd, headerWord);
-        printf("%li", rv);
-        if(rv == 1) {
-          sds[i] = -1;
+    if(ansavail) {
+      printf("Sending %s", word);
+      addHeader(headerWord, HEADER_WORD, word);
+      nanosleep(&delay, NULL);
+      for(i = 0; i < numPlayers; i++) {
+        sd = sds[i];
+        if(sd != -1) {
+          char *rv = tick(sd, headerWord);
+          printf("%li", rv);
+          if(rv == 1) {
+            sds[i] = -1;
+          }
+          else if(rv) {  // rv is a given answer
+            printf(rv);
+            if(checkAnswer(rv, answer))
+              scores[i]++;
+          }
+          else {
+            printf(rv);
+          }
         }
-        else if(rv) {  // rv is a given answer
-          printf(rv);
-          if(checkAnswer(rv, answer))
-            scores[i]++;
-        }
-        else {
-          printf(rv);
-        }
+        //printf("shm mem: %s\n", shared_mem);
       }
-      //printf("shm mem: %s\n", shared_mem);
     }
   }
   printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
