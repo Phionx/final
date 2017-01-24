@@ -8,6 +8,13 @@ enum header_t {
 };
 typedef enum header_t header;
 
+typedef struct {
+	char * subject;
+	char * TossUpQuestion;
+	char * TossUpAnswer;
+	char * BonusQuestion;
+	char * BonusAnswer;
+} question;
 
 char *addHeader(char *dest, header head, char *data);
 header remHeader(char *data);
