@@ -52,7 +52,7 @@ int main (int argc, char *argv []) {
 		fclose (questionsFile);
 	}
 
-	printf("%s", line);
+	//printf("%s", line);
 
 	
         char *token = 0;
@@ -99,6 +99,8 @@ int main (int argc, char *argv []) {
                 token = strtok(NULL, "⏒");
 				printf("new token: %s", token);
             }
+
+
         
     
 
