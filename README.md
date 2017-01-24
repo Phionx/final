@@ -2,6 +2,7 @@
 
 Project Members: Charles Zhang, Gabriel Marks, Shantanu Jha
 
+Instructions:
 1. Use make to compile. 
 2. Run ./server.out to set up the server. 
 3. On other machines, run ./client.out, which will connect the client on these machines to the server. The player will then be sorted into one of two teams, red or blue.
