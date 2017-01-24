@@ -2,7 +2,7 @@
 
 Project Members: Charles Zhang, Gabriel Marks, Shantanu Jha
 
-Instructions:
+<h1>Instructions:</h1>
 
 1. Use make to compile. 
 2. Run ./server.out to set up the server. 
@@ -14,16 +14,16 @@ Instructions:
 
 Included files:
 
--DEVLOG
--DESIGN			
--client.h	
--comms.h		
--data.csv	
--makefile	
--server.c
--README.md	
--client.c	
--comms.c				
--data.c	
--parser.c 
--server.h
+- DEVLOG
+- DESIGN			
+- client.h	
+- comms.h		
+- data.csv	
+- makefile	
+- server.c
+- README.md	
+- client.c	
+- comms.c				
+- data.c	
+- parser.c 
+- server.h
