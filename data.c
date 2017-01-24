@@ -86,11 +86,11 @@ game init (game scibowl){
 		for (iter = 0; iter < scibowl.roundNum ; iter++){
 			for(int m = 0; m < ROUND_SIZE; m++){
 				scibowl.rounds[iter].numberOfQuestions = ROUND_SIZE;
-				scibowl.rounds[iter].questions[m].subject = questions[iter*25 + m].subject;
-				scibowl.rounds[iter].questions[m].tossUpQuestion = questions[iter*25 + m].tossUpQuestion;;
-				scibowl.rounds[iter].questions[m].tossUpAnswer = questions[iter*25 + m].tossUpAnswer;;
-				scibowl.rounds[iter].questions[m].bonusQuestion = questions[iter*25 + m].bonusQuestion;
-				scibowl.rounds[iter].questions[m].bonusAnswer = questions[iter*25 + m].bonusAnswer;
+				scibowl.rounds[iter].questions[m].subject = questions[iter*ROUND_SIZE + m].subject;
+				scibowl.rounds[iter].questions[m].tossUpQuestion = questions[iter*ROUND_SIZE + m].tossUpQuestion;
+				scibowl.rounds[iter].questions[m].tossUpAnswer = questions[iter*ROUND_SIZE + m].tossUpAnswer;;
+				scibowl.rounds[iter].questions[m].bonusQuestion = questions[iter*ROUND_SIZE + m].bonusQuestion;
+				scibowl.rounds[iter].questions[m].bonusAnswer = questions[iter*ROUND_SIZE + m].bonusAnswer;
 			}
 		}
 
