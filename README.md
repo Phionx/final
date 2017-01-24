@@ -2,7 +2,7 @@
 
 Project Members: Charles Zhang, Gabriel Marks, Shantanu Jha
 
-<h1>Instructions:</h1>
+<h2>Instructions:</h2>
 
 1. Use make to compile. 
 2. Run ./server.out to set up the server. 
@@ -12,7 +12,7 @@ Project Members: Charles Zhang, Gabriel Marks, Shantanu Jha
 6. For every question a player gets right, the score of that player's team goes up by 1. 
 7. The team with the highest points wins after the last question is read.
 
-Included files:
+<h2>Included files:</h2>
 
 - DEVLOG
 - DESIGN			
