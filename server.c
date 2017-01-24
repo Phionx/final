@@ -188,9 +188,6 @@ int main(int argc, char *argv[]) {
   //int msize; // the size (in bytes) of the shared memory segment
   //const char *name = "questions";
   //int key = 123456;
-
-  char *outte;
-
   game myGame;
   myGame = init(myGame);
   srand(time(NULL));
@@ -227,6 +224,7 @@ int main(int argc, char *argv[]) {
       sds[numPlayers++] = sd;
       setBlocking(sd, 0);
       printf("Player %d joined team %s.\n", numPlayers, numPlayers % 2 ? "red" : "blue");
+      //printf("SD is %d, numPlayers is %d\n", sd, numPlayers);
     }
   }
   else {
@@ -237,11 +235,14 @@ int main(int argc, char *argv[]) {
   }
   int i,j,k;
   unsigned long scores[] = {0,0,0,0,0,0,0,0,0,0};
+  //printf("sample question: %s", questions[5].tossUpQuestion);
   for(j = 0; j < numQuestions; j++) {
+    //printf("IN da loop\n");
     int bonus;
     question q = questions[j];
     int winner = -1;
     for(bonus = 0; bonus < 2; bonus++) {
+      //printf("bonus loop\n");
       char *sentence;
       char *answer;
       char roundEnded = 0;
@@ -267,13 +268,15 @@ int main(int argc, char *argv[]) {
       
 
       char *word = strsep(&sentence, " ");
-      while(outte && word != NULL && !roundEnded) {
+      while(word != NULL && !roundEnded) {
         if(ansavail) {
           nanosleep(&delay, NULL);
         }
         for(i = 0; i < numPlayers; i++) {
           sd = sds[i];
+
           if(sd != -1) {
+            //printf("hello\n");
             send_tick(sd, word);
             char *rv = receive_tick(sd);
             //printf("%li", rv);
@@ -284,7 +287,7 @@ int main(int argc, char *argv[]) {
               //printf(rv);
               if(checkAnswer(rv, answer)) {
                 winner = i;
-                printf("winner: %d", winner);
+                //printf("winner: %d", winner);
                 scores[i]++;
                 sendScores(sds, scores);
                 roundEnded = 1;
