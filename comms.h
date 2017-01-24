@@ -10,10 +10,10 @@ typedef enum header_t header;
 
 typedef struct {
 	char * subject;
-	char * TossUpQuestion;
-	char * TossUpAnswer;
-	char * BonusQuestion;
-	char * BonusAnswer;
+	char * tossUpQuestion;
+	char * tossUpAnswer;
+	char * bonusQuestion;
+	char * bonusAnswer;
 } question;
 
 char *addHeader(char *dest, header head, char *data);

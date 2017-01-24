@@ -34,6 +34,7 @@ int main (int argc, char *argv []) {
 	int size = st.st_size;
 
 	int i = 0;
+	int j = 0;
 
 	FILE *questionsFile = fopen("data.csv", "r");
     if (questionsFile)
@@ -45,6 +46,7 @@ int main (int argc, char *argv []) {
 			token = strtok(&line[0], "⏒");
             while (token)
             {
+
 				innerToken = strtok(token, "⏑");
 				while (innerToken){
 					
