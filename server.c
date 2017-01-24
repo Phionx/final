@@ -37,6 +37,8 @@ union semun {
   ushort *array;
 };
 
+int ansavail = 1;
+
 /* struct sembuf { */
 /*   ushort_t        sem_num;        /\* semaphore number *\/ */
 /*   short           sem_op;         /\* semaphore operation *\/ */
@@ -86,7 +88,7 @@ char *tick(int sd, char *word) {
   char readBuf[256];
   char writeBuf[256];
 
-  if(semctl(semid,0,GETVAL) == 1){
+  if(ansavail){
     if(write(sd, word, 256) == -1)
      return 1;
   }
@@ -97,30 +99,20 @@ char *tick(int sd, char *word) {
       return 1;
     }
 
-    else if(semctl(semid,0,GETVAL)==1 && head == HEADER_ANSWER_REQUEST) {
-      struct sembuf ops;
-      ops.sem_num = 0;
-      ops.sem_op = -1;
-      ops.sem_flg = IPC_NOWAIT;
-      semop(semid,&ops,1);
-      printf("sem val: %d\n",semctl(semid,0,GETVAL));
+    else if(head == HEADER_ANSWER_REQUEST && ansavail) {
       write(sd, addHeader(readBuf, HEADER_ANSWER_ACCEPT, readBuf), 256);
+      ansavail = 0;
 	  }
 
     else if(head == HEADER_ANSWER) {
-      printf("answer\n");
-      return readBuf;
+      printf("answer: %s\n", readBuf);
+      ansavail = 1;
+      char *buf = malloc(256);
+      strcpy(buf, readBuf);
+      return buf;
     }
   }
   return 0;
-}
-
-setBlocking(int fd, int blocking) {
-  int flags = fcntl(fd, F_GETFL, 0);
-  if(blocking)
-    fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);  // make reading from sd blocking
-  else
-    fcntl(fd, F_SETFL, flags |  O_NONBLOCK);
 }
 
 killSem() {  // program control is not returned
@@ -240,13 +232,17 @@ int main(int argc, char *argv[]) {
       sd = sds[i];
       if(sd != -1) {
         char *rv = tick(sd, headerWord);
+        printf("%li", rv);
         if(rv == 1) {
           sds[i] = -1;
         }
-        else if(rv > 2) {  // rv is a given answer
+        else if(rv) {  // rv is a given answer
           printf(rv);
           if(checkAnswer(rv, answer))
             scores[i]++;
+        }
+        else {
+          printf(rv);
         }
       }
       //printf("shm mem: %s\n", shared_mem);

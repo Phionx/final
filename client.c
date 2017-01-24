@@ -13,7 +13,12 @@
 
 
 int sock;
-
+enum state_t {
+  STATE_DEFAULT,
+  STATE_ANSWER
+};
+typedef enum state_t state;
+state curr = STATE_DEFAULT;
 void sighandler(int sig) {
   if(sig == SIGINT) {
     write(sock, "\x04", 2);
@@ -26,7 +31,8 @@ sendAnswer() {
   printf("Enter the answer: ");
   fgets(answer, 256, stdin);
   printf("You entered: %s\n", answer);
-  addHeader(answer, HEADER_ANSWER, strtok(answer, "\n"));
+  char *formatted = strtok(answer, "\n");
+  addHeader(answer, HEADER_ANSWER, formatted);
   printf("sending %s", answer);
   write(sock, answer, 256);
 }
@@ -48,22 +54,27 @@ int main(int argc, char *argv[]) {
   connect(sock, (struct sockaddr *) &serv_addr,sizeof(serv_addr));
   char in[256] = "";
   char out[256] = "";
+  int infd = fileno(stdin);
+  setBlocking(infd, 0);
+  setBlocking(sock, 0);
   int f = fork();
-  if(!f) {  // child; continues reading until parent sends stop
-    while(read(sock,in,256)) {
+  while(1) {
+    if(read(sock,in,256) != -1) {
       header head = remHeader(in);
       if(head == HEADER_WORD)
         printf("%s ", in);
       else if(head == HEADER_ANSWER_ACCEPT) {
+        curr = STATE_DEFAULT;
+        read(infd, in, 256);
+        setBlocking(infd, 1);
         sendAnswer();
       }
     }
-  }
-  else {  // parent; waits for enter to stop child reading
-    char temp[256];
-    while(1) {
-      fgets(temp, 2, stdin);
-      write(sock, addHeader(temp, HEADER_ANSWER_REQUEST, ""), 256);
+    if(curr == STATE_DEFAULT) {
+      if(read(infd, in, 256) != -1) {
+        write(sock, addHeader(in, HEADER_ANSWER_REQUEST, ""), 256);
+        curr = STATE_ANSWER;
+      }
     }
   }
   return 0;

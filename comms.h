@@ -11,3 +11,4 @@ typedef enum header_t header;
 
 char *addHeader(char *dest, header head, char *data);
 header remHeader(char *data);
+setBlocking(int, int);
