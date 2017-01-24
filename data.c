@@ -60,45 +60,56 @@ int main (int argc, char *argv []) {
 		//printf("\n%s\n", line);
 
 		printf("\nlenght of line after it was filled: %d\n", (int)strlen(line));
-			i = 0;
-			token = strtok(line, "⏒");
-            while (token != NULL)
-            {
-				printf("\n testing token: %s", token);
-				innerToken = strtok(token, "⏑");
-				j = 0;
-				while (innerToken){
-					if (j == 0) {
-						questions[i].subject = (char *)malloc(sizeof(innerToken) + 1);
-						strcpy(questions[i].subject, innerToken);
-					} else if (j == 1) {
-						questions[i].tossUpQuestion = (char *)malloc(sizeof(innerToken) + 1);
-						strcpy(questions[i].tossUpQuestion, innerToken);
-					} else if (j == 2) {
-						questions[i].tossUpAnswer = (char *)malloc(sizeof(innerToken) + 1);
-						strcpy(questions[i].tossUpAnswer, innerToken);
-					} else if (j == 3) {
-						questions[i].bonusQuestion = (char *)malloc(sizeof(innerToken) + 1);
-						strcpy(questions[i].bonusQuestion, innerToken);
-					} else if (j == 4) {
-						questions[i].bonusAnswer = (char *)malloc(sizeof(innerToken) + 1);
-						strcpy(questions[i].bonusAnswer, innerToken);
-					} else {
-						printf("\nERROR in filling up data");
-					}
-					printf("\nfilling: %s", innerToken);
-					innerToken = strtok(NULL, "⏑");
-					printf("\nfilling next: %s", innerToken);
-					j++;
+		
+		i = 0;
+		
+		//char * test = "a⏑b⏑c⏒d⏑e⏑f⏒g⏑e⏒";
+		while ( (token = strsep(&line, "ă")) != NULL){
+				//printf("\ntoken: %s", token);
+				char * foo = strdup(token);
+				while ((innerToken = strsep(&foo, "Ă")) != NULL){
+					char * goo = strdup(innerToken);
+					if(strlen(goo) != 0){
+					if (goo[0] == '0') {
+						printf("\nSubject innertoken: %s", goo + 3);
+						questions[i].subject = (char *)malloc(sizeof(goo) + 1);
+						strcpy(questions[i].subject, goo + 3);
+					} else if (goo[0] == '1') {
+						printf("\nToss up question innertoken: %s", goo + 3);
+						questions[i].tossUpQuestion = (char *)malloc(sizeof(goo) + 1);
+						strcpy(questions[i].tossUpQuestion, goo + 3);
+					} else if (goo[0] == '2') {
+						printf("\nToss up ans innertoken: %s", goo + 3);
+						questions[i].tossUpAnswer = (char *)malloc(sizeof(goo) + 1);
+						strcpy(questions[i].tossUpAnswer, goo + 3);
+					} else if (goo[0] == '3') {
+						printf("\nBonus question innertoken: %s", goo + 3);
+						questions[i].bonusQuestion = (char *)malloc(sizeof(goo) + 1);
+						strcpy(questions[i].bonusQuestion, goo + 3);
+					} else if (innerToken[0] == '4') {
+						printf("\nBonus ans innertoken: %s", goo + 3);
+						questions[i].bonusAnswer = (char *)malloc(sizeof(goo) + 1);
+						strcpy(questions[i].bonusAnswer, goo + 3);
+					}}
 				}
 				i++;
 
 				/*temp[tempCurr] = malloc(strlen(token) + 1); //This is where it all goes wron
 				strcpy(temp[tempCurr], token);
 				tempCurr++;*/
-                token = strtok(NULL, "⏒");
-				printf("new token: %s", token);
             }
+		printf("\ni: %d", i); 
+
+
+		printf("\nTESTING DATA\n");
+		printf("\nSubject: %s", questions[0].subject);
+		printf("\nToss Up Question: %s", questions[0].tossUpQuestion);
+		printf("\nToss Up Answer: %s", questions[0].tossUpAnswer);
+		printf("\nBonus Question: %s", questions[0].bonusQuestion);
+		printf("\nBonus Ans: %s", questions[0].bonusAnswer);
+
+
+
 
 
         
