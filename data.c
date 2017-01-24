@@ -104,7 +104,7 @@ game init (game scibowl){
             }
 		
 		
-		scibowl.roundNums = (int)i/25;
+		scibowl.roundNums = (int)i/ROUND_SIZE;
 		int iter = 0;
 		for (iter = 0; iter < scibowl.roundNums ; iter++){
 			for(int m = 0; m < ROUND_SIZE; m++){
