@@ -31,6 +31,8 @@ sendAnswer() {
   char answer[256];
   printf("Enter the answer: ");
   fgets(answer, 256, stdin);
+  if(strlen(answer) < 2)
+    return sendAnswer();
   char *formatted = strtok(answer, "\n");
   addHeader(answer, HEADER_ANSWER, formatted);
   write(sock, answer, 256);
@@ -72,9 +74,7 @@ int main(int argc, char *argv[]) {
         curr = STATE_DEFAULT;
       }
       else if(head == HEADER_SCORE) {
-
-        printf("\nYour team score: %lu\n", *((unsigned long *)in));
-        printf("Their team score: %lu\n", *(((unsigned long *)in) + 1));
+        printf("\nYour team score: %s\n", in);
       }
       else if(head == HEADER_ROUNDEND) {
         while(read(infd, in, 256) != -1) {};  // clear stdin after roundend
