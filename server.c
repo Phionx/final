@@ -198,6 +198,7 @@ int main(int argc, char *argv[]) {
   round myRound = myGame.rounds[rn];
   question *questions = myRound.questions;
   int numQuestions = myRound.numberOfQuestions;
+  printf("This round has %d questions.", numQuestions);
   //outte = shared_mem;
   delay.tv_nsec = 300000000;
   delay.tv_sec = 0;

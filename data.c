@@ -2,30 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-
-#define QUESTIONS 10000 //change this CAP on questions from each subject later
-#define ROUND_SIZE 25 //ROUNDS SIZE
-#define MAX_ROUNDS 100 //Maximum amount of rounds allowed
-
-
-typedef struct {
-	char * subject;
-	char * tossUpQuestion;
-	char * tossUpAnswer;
-	char * bonusQuestion;
-	char * bonusAnswer;
-} question;
-
-
-typedef struct {
-	int numberOfQuestions;
-	question questions [ROUND_SIZE + 1];
-} round;
-
-typedef struct {
-	int roundNum;
-	round rounds [MAX_ROUNDS];
-} game;
+#include "data.h"
 
 game init (game scibowl){
 
@@ -104,9 +81,9 @@ game init (game scibowl){
             }
 		
 		
-		scibowl.roundNums = (int)i/25;
+		scibowl.roundNum = (int)i/25;
 		int iter = 0;
-		for (iter = 0; iter < scibowl.roundNums ; iter++){
+		for (iter = 0; iter < scibowl.roundNum ; iter++){
 			for(int m = 0; m < ROUND_SIZE; m++){
 				scibowl.rounds[iter].numberOfQuestions = ROUND_SIZE;
 				scibowl.rounds[iter].questions[m].subject = questions[iter*25 + m].subject;
