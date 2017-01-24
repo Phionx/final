@@ -150,12 +150,6 @@ char *receive_tick(int sd) {
   return 0;
 }
 
-killSem() {  // program control is not returned
-  char semidStr[20];
-  sprintf(semidStr, "%d", semid);
-  execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
-}
-
 char checkAnswer(char *answer, char *realAnswer) {
   printf("\n\nUser answered: %s\n", answer);
   printf("Real answer: %s\n", realAnswer);
@@ -286,7 +280,5 @@ int main(int argc, char *argv[]) {
     if(ansavail)
       word = strsep(&outte, " ");
   }
-  printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
-  killSem();
   return 0;
 }
