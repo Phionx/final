@@ -4,7 +4,8 @@ enum header_t {
   HEADER_ANSWER_REQUEST,
   HEADER_ANSWER_ACCEPT,
   HEADER_ANSWER,
-  HEADER_INTERRUPT
+  HEADER_ANSWER_DENIED,
+  HEADER_ROUNDEND
 };
 typedef enum header_t header;
 

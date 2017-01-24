@@ -15,7 +15,8 @@
 int sock;
 enum state_t {
   STATE_DEFAULT,
-  STATE_ANSWER
+  STATE_ANSWER,
+  STATE_DONE
 };
 typedef enum state_t state;
 state curr = STATE_DEFAULT;
@@ -30,10 +31,8 @@ sendAnswer() {
   char answer[256];
   printf("Enter the answer: ");
   fgets(answer, 256, stdin);
-  printf("You entered: %s\n", answer);
   char *formatted = strtok(answer, "\n");
   addHeader(answer, HEADER_ANSWER, formatted);
-  printf("sending %s", answer);
   write(sock, answer, 256);
 }
 
@@ -63,14 +62,21 @@ int main(int argc, char *argv[]) {
       if(head == HEADER_WORD)
         printf("%s ", in);
       else if(head == HEADER_ANSWER_ACCEPT) {
-        curr = STATE_DEFAULT;
-        read(infd, in, 256);
+        curr = STATE_DONE;
+        
         setBlocking(infd, 1);
         sendAnswer();
         setBlocking(infd, 0);
       }
+      else if(head == HEADER_ANSWER_DENIED) {
+        curr = STATE_DEFAULT;
+      }
       else if(head == HEADER_SCORE) {
         printf("\nYour team score: %s\n", in);
+      }
+      else if(head == HEADER_ROUNDEND) {
+        while(read(infd, in, 256) != -1) {};  // clear stdin after roundend
+        curr = STATE_DEFAULT;
       }
     }
     if(curr == STATE_DEFAULT) {

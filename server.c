@@ -47,7 +47,7 @@ errorhandle(char* from) {
 
 void sighandler(int sig) {
   if(sig == SIGUSR1) {
-    printf("Received SIGUSR1, killing socket and starting questions.");
+    // printf("Received SIGUSR1, killing socket and starting questions.");
     state = PLAYING;
     shutdown(sockdes, SHUT_RDWR);
     clock_gettime(CLOCK_REALTIME, &starttime);
@@ -76,37 +76,6 @@ runParent(int nChild, int *children) {
   }
 }
 
-char *tick(int sd, char *word) {
-  char readBuf[256];
-  char writeBuf[256];
-
-  if(ansavail){
-    if(write(sd, word, 256) == -1)
-     return 1;
-  }
-  if(read(sd, readBuf, 256) != -1) {
-    header head = remHeader(readBuf);
-    if(head == HEADER_INTERRUPT) {
-      printf("Header interrupt\n");
-      return 1;
-    }
-
-    else if(head == HEADER_ANSWER_REQUEST && ansavail) {
-      write(sd, addHeader(readBuf, HEADER_ANSWER_ACCEPT, readBuf), 256);
-      ansavail = 0;
-	  }
-
-    else if(head == HEADER_ANSWER) {
-      printf("answer: %s\n", readBuf);
-      ansavail = 1;
-      char *buf = malloc(256);
-      strcpy(buf, readBuf);
-      return buf;
-    }
-  }
-  return 0;
-}
-
 int send_tick(int sd, char *word) {
   char writeBuf[256];
   if(ansavail) {
@@ -121,18 +90,18 @@ char *receive_tick(int sd) {
 
   if(read(sd, buf, 256) != -1) {
     header head = remHeader(buf);
-    if(head == HEADER_INTERRUPT) {
-      printf("Header interrupt\n");
-      return 1;
-    }
 
-    else if(head == HEADER_ANSWER_REQUEST && ansavail) {
-      write(sd, addHeader(buf, HEADER_ANSWER_ACCEPT, buf), 256);
-      ansavail = 0;
+    if(head == HEADER_ANSWER_REQUEST) {
+      if(ansavail) {
+        write(sd, addHeader(buf, HEADER_ANSWER_ACCEPT, buf), 256);
+        ansavail = 0;
+      }
+      else {
+        write(sd, addHeader(buf, HEADER_ANSWER_DENIED, buf), 256);
+      }
     }
 
     else if(head == HEADER_ANSWER) {
-      printf("answer: %s\n", buf);
       ansavail = 1;
       char *pbuf = malloc(256);
       strcpy(pbuf, buf);
@@ -161,19 +130,12 @@ sendScores(int *sds, unsigned long *scores) {
   evenScore = 0;
   oddScore = 0;
   char evenBuf[256], oddBuf[256];
-  for(i = 0; i < 10; i++) {
-    printf("scores[%d]: %lu\n", i, scores[i]);
-  }
   for(i = 0; i < 5; i++) {
-    printf("scores[%d]: %lu\n", 2 * i, scores[2 * i]);
-    printf("scores[%d]: %lu\n", 2 * i + 1, scores[2 * i + 1]);
     evenScore += scores[2 * i];
     oddScore += scores[2 * i + 1];
   }
-  printf("evens: %lu, odds: %lu", evenScore, oddScore);
   sprintf(evenBuf, "%c%lu", HEADER_SCORE, evenScore);
   sprintf(oddBuf, "%c%lu", HEADER_SCORE, oddScore);
-  printf("evens: %s, odds: %s", evenBuf, oddBuf);
   for(i = 0; i < 5; i++) {
     if(sds[2 * i] != -1)
       write(sds[2 * i], evenBuf, 256);
@@ -206,7 +168,6 @@ int main(int argc, char *argv[]) {
   }
 
   listen(sockdes,10);
-  printf("listening for connections\n");
   socklen_t cli_len = sizeof(cli_addr);
 
   //int msize; // the size (in bytes) of the shared memory segment
@@ -262,10 +223,8 @@ int main(int argc, char *argv[]) {
     char temp[2];
     fgets(temp, 2, stdin);
     kill(masterPID, SIGUSR1);
-    printf("Master has been sent SIGUSR1\n");
     exit(0);  // job done, parent now has all children and can continue
   }
-  printf("Out of loop\n");
   int i,j,k;
   unsigned long scores[] = {0,0,0,0,0,0,0,0,0,0};
   for(j = 0; j < numQuestions; j++) {
@@ -277,7 +236,6 @@ int main(int argc, char *argv[]) {
     char roundEnded = 0;
     while(outte && word != NULL && !roundEnded) {
       if(ansavail) {
-        printf("Sending %s", word);
         nanosleep(&delay, NULL);
       }
       for(i = 0; i < numPlayers; i++) {
@@ -306,6 +264,13 @@ int main(int argc, char *argv[]) {
       }
       if(ansavail)
         word = strsep(&sentence, " ");
+    }
+    char temp[5] = "";
+    for(i = 0; i < numPlayers; i++) {
+      int sd = sds[i];
+      if(sd != -1) {
+        write(sd, addHeader(temp, HEADER_ROUNDEND, temp), 256);
+      }
     }
   }
   return 0;
