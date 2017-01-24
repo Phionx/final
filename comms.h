@@ -9,6 +9,8 @@ enum header_t {
 };
 typedef enum header_t header;
 
+
+
 typedef struct {
 	char * subject;
 	char * tossUpQuestion;
@@ -17,6 +19,16 @@ typedef struct {
 	char * bonusAnswer;
 } question;
 
+
+typedef struct {
+	int numberOfQuestions;
+	question questions [ROUND_SIZE];
+} round;
+
+typedef struct {
+	int roundNums;
+	round rounds [MAX_ROUNDS];
+} game;
 char *addHeader(char *dest, header head, char *data);
 header remHeader(char *data);
 setBlocking(int, int);
