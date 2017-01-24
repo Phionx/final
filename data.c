@@ -64,30 +64,30 @@ int main (int argc, char *argv []) {
 		i = 0;
 		
 		//char * test = "a⏑b⏑c⏒d⏑e⏑f⏒g⏑e⏒";
-		while ( (token = strsep(&line, "\x02")) != NULL){
+		while ( (token = strsep(&line, "\x03")) != NULL){
 				//printf("\ntoken: %s", token);
 				char * foo = strdup(token);
-				while ((innerToken = strsep(&foo, "\x03")) != NULL){
+				while ((innerToken = strsep(&foo, "\x02")) != NULL){
 					char * goo = strdup(innerToken);
 					if (strlen(goo) > 0) {
 					if (goo[0] == '0') {
-						printf("\nSubject innertoken: %s", goo + 3);
+					  //printf("\nSubject innertoken: %s", goo + 3);
 						questions[i].subject = goo + 3;
 						//strcpy(questions[i].subject, goo + 3);
 					} else if (goo[0] == '1') {
-						printf("\nToss up question innertoken: %s", goo + 3);
+					  //printf("\nToss up question innertoken: %s", goo + 3);
 						questions[i].tossUpQuestion = goo + 3;
 						//strcpy(questions[i].tossUpQuestion, goo + 3);
 					} else if (goo[0] == '2') {
-						printf("\nToss up ans innertoken: %s", goo + 3);
+					  //printf("\nToss up ans innertoken: %s", goo + 3);
 						questions[i].tossUpAnswer = goo + 3;
 						//strcpy(questions[i].tossUpAnswer, goo + 3);
 					} else if (goo[0] == '3') {
-						printf("\nBonus question innertoken: %s", goo + 3);
+					  //printf("\nBonus question innertoken: %s", goo + 3);
 						questions[i].bonusQuestion = goo + 3;
 						//strcpy(questions[i].bonusQuestion, goo + 3);
 					} else if (innerToken[0] == '4') {
-						printf("\nBonus ans innertoken: %s", goo + 3);
+					  //printf("\nBonus ans innertoken: %s", goo + 3);
 						questions[i].bonusAnswer = goo + 3;
 						//strcpy(questions[i].bonusAnswer, goo + 3);
 					}}
@@ -102,11 +102,16 @@ int main (int argc, char *argv []) {
 
 
 		printf("\nTESTING DATA\n");
-		printf("\nSubject: %s", questions[0].subject);
-		printf("\nToss Up Question: %s", questions[0].tossUpQuestion);
-		printf("\nToss Up Answer: %s", questions[0].tossUpAnswer);
-		printf("\nBonus Question: %s", questions[0].bonusQuestion);
-		printf("\nBonus Ans: %s", questions[0].bonusAnswer);
+		srand(time(NULL));
+		int k = 0;
+		for(k = 0; k < 20; k++) {
+		  int r = rand() % i;
+		  printf("\nSubject: %s", questions[r].subject);
+		  printf("\nToss Up Question: %s", questions[r].tossUpQuestion);
+		  printf("\nToss Up Answer: %s", questions[r].tossUpAnswer);
+		  printf("\nBonus Question: %s", questions[r].bonusQuestion);
+		  printf("\nBonus Ans: %s", questions[r].bonusAnswer);
+		}
 
 
 
