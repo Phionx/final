@@ -14,16 +14,16 @@ Instructions:
 
 Included files:
 
-DEVLOG
-DESIGN			
-client.h	
-comms.h		
-data.csv	
-makefile	
-server.c
-README.md	
-client.c	
-comms.c				
-data.c	
-parser.c 
-server.h
+-DEVLOG
+-DESIGN			
+-client.h	
+-comms.h		
+-data.csv	
+-makefile	
+-server.c
+-README.md	
+-client.c	
+-comms.c				
+-data.c	
+-parser.c 
+-server.h
