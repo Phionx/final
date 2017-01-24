@@ -57,7 +57,6 @@ int main(int argc, char *argv[]) {
   int infd = fileno(stdin);
   setBlocking(infd, 0);
   setBlocking(sock, 0);
-  int f = fork();
   while(1) {
     if(read(sock,in,256) != -1) {
       header head = remHeader(in);

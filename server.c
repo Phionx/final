@@ -220,11 +220,11 @@ int main(int argc, char *argv[]) {
   }
   printf("Out of loop\n");
   int i;
-  char *word;
+  char *word = strsep(&outte, " ");
   char headerWord[256];
   int scores[] = {0,0,0,0,0,0,0,0,0,0};
   semid = semget(123456,0,0);
-  while(outte && (word = strsep(&outte, " ")) != NULL) {
+  while(outte && word != NULL) {
     if(ansavail) {
       printf("Sending %s", word);
       addHeader(headerWord, HEADER_WORD, word);
@@ -248,6 +248,7 @@ int main(int argc, char *argv[]) {
         }
         //printf("shm mem: %s\n", shared_mem);
       }
+      word = strsep(&outte, " ");
     }
   }
   printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
