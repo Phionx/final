@@ -15,6 +15,8 @@
 #include <signal.h>
 #include <sys/un.h>
 #include <sys/sem.h>
+#include "server.h"
+
 
 const int WAITING = 0;
 const int PLAYING = 1;
@@ -22,8 +24,8 @@ int state;
 
 struct timespec starttime;
 struct timespec nowtime;
-// delay is currently 10ms
-// struct timespec delay;
+// delay is currently 300ms
+struct timespec delay;
 int semid;
 int sockdes;
 //int shm_fd = -1;
@@ -34,6 +36,8 @@ union semun {
   struct semid_ds *buf;
   ushort *array;
 };
+
+int ansavail = 1;
 
 /* struct sembuf { */
 /*   ushort_t        sem_num;        /\* semaphore number *\/ */
@@ -57,10 +61,7 @@ void sighandler(int sig) {
     return;
   }
   if(sig == SIGINT) {
-    char semidStr[20];
-    sprintf(semidStr, "%d", semid);
-    printf("Executing ipcrm");
-    execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
+    killSem();
     exit(sig);
   }
   /*  if(sig = SIGUSR2)
@@ -83,67 +84,92 @@ runParent(int nChild, int *children) {
   }
 }
 
-char *tick(int sd, char *word) {  // must be ** for strsep
+char *tick(int sd, char *word) {
   char readBuf[256];
   char writeBuf[256];
 
-  // int semid = semget(123456,0,0);
-  // printf("semid: %d\n",semid);
-
-  //printf("Sending child word %s...", word);
-  //char zero[1] = "";
-  // if(write(sd, NULL, 0) == -1) break;
-  if(semctl(semid,0,GETVAL) == 1){
+  if(ansavail){
     if(write(sd, word, 256) == -1)
      return 1;
   }
-  if(read(sd, readBuf, 2) != -1) {
-    if(!strcmp(readBuf, "\x04")) {
+  if(read(sd, readBuf, 256) != -1) {
+    header head = remHeader(readBuf);
+    if(head == HEADER_INTERRUPT) {
+      printf("Header interrupt\n");
       return 1;
     }
 
-    else if(semctl(semid,0,GETVAL)==1) {
-      if(!strcmp(readBuf, "\x02")) {
-        struct sembuf ops;
-        ops.sem_num = 0;
-        ops.sem_op = -1;
-        ops.sem_flg = IPC_NOWAIT;
-        semop(semid,&ops,1);
-        printf("sem val: %d\n",semctl(semid,0,GETVAL));
+    else if(head == HEADER_ANSWER_REQUEST && ansavail) {
+      write(sd, addHeader(readBuf, HEADER_ANSWER_ACCEPT, readBuf), 256);
+      ansavail = 0;
+	  }
 
-        write(sd, "\x03", 2);
-        setBlocking(sd, 1);
-        read(sd, readBuf, 256);
-        setBlocking(sd, 0);
-        return readBuf;
-	    }
-
-  //   if(strcmp(word,"\n"))
-  //     amtTime += 300;  // 300 ms between each word
-  //       else
-  //     {
-	// amtTime += 5000;
-	// write(sd, "\nAnswer: ", 256);
-  //     }
-  //   printf("Sending child word %s...", word);
-  //   //char zero[1] = "";
-  //   // if(write(sd, NULL, 0) == -1) break;
-  //   if(semctl(semid,0,GETVAL) == 1){
-  //     if(write(sd, word, 256) == -1)
-	//      return 1;
-
+    else if(head == HEADER_ANSWER) {
+      printf("answer: %s\n", readBuf);
+      ansavail = 1;
+      char *buf = malloc(256);
+      strcpy(buf, readBuf);
+      return buf;
     }
   }
   return 0;
 }
 
-setBlocking(int fd, int blocking) {
-  int flags = fcntl(fd, F_GETFL, 0);
-  if(blocking)
-    fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);  // make reading from sd blocking
-  else
-    fcntl(fd, F_SETFL, flags |  O_NONBLOCK);
+int send_tick(int sd, char *word) {
+  char writeBuf[256];
+  if(ansavail) {
+    if(write(sd, addHeader(writeBuf, HEADER_WORD, word), 256) == -1)
+      return 1;
+  }
+  return 0;
 }
+
+char *receive_tick(int sd) {
+  char buf[256];
+
+  if(read(sd, buf, 256) != -1) {
+    header head = remHeader(buf);
+    if(head == HEADER_INTERRUPT) {
+      printf("Header interrupt\n");
+      return 1;
+    }
+
+    else if(head == HEADER_ANSWER_REQUEST && ansavail) {
+      write(sd, addHeader(buf, HEADER_ANSWER_ACCEPT, buf), 256);
+      ansavail = 0;
+    }
+
+    else if(head == HEADER_ANSWER) {
+      printf("answer: %s\n", buf);
+      ansavail = 1;
+      char *pbuf = malloc(256);
+      strcpy(pbuf, buf);
+      return pbuf;
+    }
+  }
+  return 0;
+}
+
+killSem() {  // program control is not returned
+  char semidStr[20];
+  sprintf(semidStr, "%d", semid);
+  execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
+}
+
+char checkAnswer(char *answer, char *realAnswer) {
+  printf("\n\nUser answered: %s\n", answer);
+  printf("Real answer: %s\n", realAnswer);
+  printf("Is this correct? (y/n) ");
+  char correct[3];
+  fgets(correct, 3, stdin);
+  if(!strcmp(correct, "y\n"))
+    return 1;
+  else if(!strcmp(correct, "n\n"))
+    return 0;
+  else
+    return checkAnswer(answer, realAnswer);
+}
+
 
 int main(int argc, char *argv[]) {
 //  signal(SIGINT, sighandler);
@@ -176,10 +202,7 @@ int main(int argc, char *argv[]) {
   //int key = 123456;
 
   char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins. \n Unlike the Einstein model, the Debye model properly models how this quantity changes for a substance as temperature decreases, though for higher temperatures it may be derived from a crystal's lattice vibrations through the Law of Dulong and Petit. For a monatomic ideal gas, it is three halves times the ideal gas constant, while that factor is seven-halves for a diatomic ideal gas. For 10 points, identify this quantity, the amount of energy necessary to increase the temperature of a unit quantity of a substance by a unit amount. ";
-  char *answers[5] = {
-    "IDK", "the", "real", "answer"
-  };
-  answers[4] = 0;
+  char answer[] = "answer";
   // temp, later we will read from file
   char *outte = out;
 
@@ -194,8 +217,8 @@ int main(int argc, char *argv[]) {
   //  union semun arg;
 
   //outte = shared_mem;
-  // delay.tv_nsec = 10000000;
-  // delay.tv_sec = 0;
+  delay.tv_nsec = 300000000;
+  delay.tv_sec = 0;
   state = WAITING;
   int start = 0;
   int children[10];
@@ -220,6 +243,7 @@ int main(int argc, char *argv[]) {
       }
       sds[numPlayers++] = sd;
       setBlocking(sd, 0);
+      printf("Player %d joined.\n", numPlayers);
     }
   }
   else {
@@ -228,26 +252,41 @@ int main(int argc, char *argv[]) {
     kill(masterPID, SIGUSR1);
     printf("Master has been sent SIGUSR1\n");
     exit(0);  // job done, parent now has all children and can continue
-
   }
+  printf("Out of loop\n");
   int i;
+  char *word = strsep(&outte, " ");
+  int scores[] = {0,0,0,0,0,0,0,0,0,0};
   semid = semget(123456,0,0);
-  while(1) {
-    word = strsep(&outte, " ");
-    sleep(.03);
+  while(outte && word != NULL) {
+    if(ansavail) {
+      printf("Sending %s", word);
+      nanosleep(&delay, NULL);
+    }
     for(i = 0; i < numPlayers; i++) {
       sd = sds[i];
       if(sd != -1) {
-        char *rv = tick(sd, word);
+        send_tick(sd, word);
+        char *rv = receive_tick(sd);
+        printf("%li", rv);
         if(rv == 1) {
           sds[i] = -1;
         }
-        if(rv > 2) {
-          //checkAnswer(sd, rv);
+        else if(rv) {  // rv is a given answer
+          printf(rv);
+          if(checkAnswer(rv, answer))
+            scores[i]++;
+        }
+        else {
+          printf(rv);
         }
       }
       //printf("shm mem: %s\n", shared_mem);
     }
+    if(ansavail)
+      word = strsep(&outte, " ");
+  }
   printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
+  killSem();
   return 0;
 }

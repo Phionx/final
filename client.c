@@ -8,9 +8,17 @@
 #include <signal.h>
 #include <sys/sem.h>
 #include <arpa/inet.h>
+#include <stdlib.h>
+#include "client.h"
+
 
 int sock;
-
+enum state_t {
+  STATE_DEFAULT,
+  STATE_ANSWER
+};
+typedef enum state_t state;
+state curr = STATE_DEFAULT;
 void sighandler(int sig) {
   if(sig == SIGINT) {
     write(sock, "\x04", 2);
@@ -18,11 +26,23 @@ void sighandler(int sig) {
   }
 }
 
+sendAnswer() {
+  char answer[256];
+  printf("Enter the answer: ");
+  fgets(answer, 256, stdin);
+  printf("You entered: %s\n", answer);
+  char *formatted = strtok(answer, "\n");
+  addHeader(answer, HEADER_ANSWER, formatted);
+  printf("sending %s", answer);
+  write(sock, answer, 256);
+}
+
 int main(int argc, char *argv[]) {
   if(argc < 2) {
     printf("USAGE: ./client.out <IP>\n");
     return 1;
   }
+  setbuf(stdout, NULL);
   char *ip = argv[1];
   signal(SIGINT, sighandler);
   struct sockaddr_in serv_addr;
@@ -32,48 +52,29 @@ int main(int argc, char *argv[]) {
 
   sock = socket(AF_INET, SOCK_STREAM,0);
   connect(sock, (struct sockaddr *) &serv_addr,sizeof(serv_addr));
-  char in[256], out[256];
-  int f = fork();
-  if(!f) {  // child; continues reading until parent sends stop
-    while(read(sock,in,sizeof(in))) {
-      //      char *lmao = in;
-      //printf("type message: ");
-      //    fgets(out,sizeof(out),stdin);
-      //write(sock,out,sizeof(out));
-      //printf("receiving ");
-      //if(read(sock,in,256))
-      //      printf("fuck this\n");
-      fflush(stdout);
-      printf("%s ",in);
-      //sleep(1);
-      //char in[256];
+  char in[256] = "";
+  char out[256] = "";
+  int infd = fileno(stdin);
+  setBlocking(infd, 0);
+  setBlocking(sock, 0);
+  while(1) {
+    if(read(sock,in,256) != -1) {
+      header head = remHeader(in);
+      if(head == HEADER_WORD)
+        printf("%s ", in);
+      else if(head == HEADER_ANSWER_ACCEPT) {
+        curr = STATE_DEFAULT;
+        read(infd, in, 256);
+        setBlocking(infd, 1);
+        sendAnswer();
+      }
     }
-  }
-  else {  // parent; waits for enter to stop child reading
-    char temp[256];
-    //    int semid = semget(123456,0,0);
-
-    fgets(temp, 2, stdin);
-    /*
-    struct sembuf ops;
-    ops.sem_num = 1;
-    ops.sem_op = -1;
-    ops.sem_flg = IPC_NOWAIT;
-    semop(semid,&ops,1);
-    printf("sem val: %d\n",semctl(semid,0,GETVAL));
-    */
-    kill(f, 9);
-    write(sock, "\x02", 2);
-    read(sock, temp, 256);  // clear last answer
-    char answer[256];
-    printf("Enter the answer: ");
-    fgets(answer, 256, stdin);
-    write(sock, strtok(answer, "\n"), 256);
-    read(sock, temp, 2);
-    while(temp[0] > 1)
-      read(sock, temp, 2);  // make sure that we have correct output
-    printf("temp[0]: %d = %c, temp[1]: %d = %c", temp[0], temp[0], temp[1], temp[1]);
-    printf("Answer was %s\n", temp[0] ? "correct" : "wrong");
+    if(curr == STATE_DEFAULT) {
+      if(read(infd, in, 256) != -1) {
+        write(sock, addHeader(in, HEADER_ANSWER_REQUEST, ""), 256);
+        curr = STATE_ANSWER;
+      }
+    }
   }
   return 0;
 }
