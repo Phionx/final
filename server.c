@@ -15,6 +15,8 @@
 #include <signal.h>
 #include <sys/un.h>
 #include <sys/sem.h>
+#include "server.h"
+
 
 const int WAITING = 0;
 const int PLAYING = 1;
@@ -80,55 +82,31 @@ runParent(int nChild, int *children) {
   }
 }
 
-char *tick(int sd, char *word) {  // must be ** for strsep
+char *tick(int sd, char *word) {
   char readBuf[256];
   char writeBuf[256];
 
-  // int semid = semget(123456,0,0);
-  // printf("semid: %d\n",semid);
-
-  //printf("Sending child word %s...", word);
-  //char zero[1] = "";
-  // if(write(sd, NULL, 0) == -1) break;
   if(semctl(semid,0,GETVAL) == 1){
     if(write(sd, word, 256) == -1)
      return 1;
   }
-  if(read(sd, readBuf, 2) != -1) {
-    if(!strcmp(readBuf, "\x04")) {
+  if(read(sd, readBuf, 256) != -1) {
+    header head = remHeader(readBuf);
+    if(head == HEADER_INTERRUPT)
       return 1;
-    }
 
-    else if(semctl(semid,0,GETVAL)==1) {
-      if(!strcmp(readBuf, "\x02")) {
-        struct sembuf ops;
-        ops.sem_num = 0;
-        ops.sem_op = -1;
-        ops.sem_flg = IPC_NOWAIT;
-        semop(semid,&ops,1);
-        printf("sem val: %d\n",semctl(semid,0,GETVAL));
+    else if(semctl(semid,0,GETVAL)==1 && head == HEADER_ANSWER_REQUEST) {
+      struct sembuf ops;
+      ops.sem_num = 0;
+      ops.sem_op = -1;
+      ops.sem_flg = IPC_NOWAIT;
+      semop(semid,&ops,1);
+      printf("sem val: %d\n",semctl(semid,0,GETVAL));
+      write(sd, addHeader(readBuf, HEADER_ANSWER_ACCEPT, readBuf), 256);
+	  }
 
-        write(sd, "\x03", 2);
-        setBlocking(sd, 1);
-        read(sd, readBuf, 256);
-        setBlocking(sd, 0);
-        return readBuf;
-	    }
-
-  //   if(strcmp(word,"\n"))
-  //     amtTime += 300;  // 300 ms between each word
-  //       else
-  //     {
-	// amtTime += 5000;
-	// write(sd, "\nAnswer: ", 256);
-  //     }
-  //   printf("Sending child word %s...", word);
-  //   //char zero[1] = "";
-  //   // if(write(sd, NULL, 0) == -1) break;
-  //   if(semctl(semid,0,GETVAL) == 1){
-  //     if(write(sd, word, 256) == -1)
-	//      return 1;
-
+    else if(head == HEADER_ANSWER) {
+      return readBuf;
     }
   }
   return 0;
@@ -147,6 +125,7 @@ killSem() {  // program control is not returned
   sprintf(semidStr, "%d", semid);
   execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
 }
+
 
 int main(int argc, char *argv[]) {
 //  signal(SIGINT, sighandler);
@@ -232,18 +211,20 @@ int main(int argc, char *argv[]) {
     kill(masterPID, SIGUSR1);
     printf("Master has been sent SIGUSR1\n");
     exit(0);  // job done, parent now has all children and can continue
-
   }
+  printf("Out of loop\n");
   int i;
-  char *word = "abc";
+  char *word;
+  char headerWord[256];
   semid = semget(123456,0,0);
-  while(word && outte && *outte) {
-    word = strsep(&outte, " ");
+  while(outte && (word = strsep(&outte, " ")) != NULL) {
+    printf("Sending %s", word);
+    addHeader(headerWord, HEADER_WORD, word);
     nanosleep(&delay, NULL);
     for(i = 0; i < numPlayers; i++) {
       sd = sds[i];
       if(sd != -1) {
-        char *rv = tick(sd, word);
+        char *rv = tick(sd, headerWord);
         if(rv == 1) {
           sds[i] = -1;
         }
