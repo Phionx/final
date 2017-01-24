@@ -72,7 +72,9 @@ int main(int argc, char *argv[]) {
         curr = STATE_DEFAULT;
       }
       else if(head == HEADER_SCORE) {
-        printf("\nYour team score: %s\n", in);
+
+        printf("\nYour team score: %lu\n", *((unsigned long *)in));
+        printf("Their team score: %lu\n", *(((unsigned long *)in) + 1));
       }
       else if(head == HEADER_ROUNDEND) {
         while(read(infd, in, 256) != -1) {};  // clear stdin after roundend
@@ -81,6 +83,13 @@ int main(int argc, char *argv[]) {
       else if(head == HEADER_BONUS_WAIT) {
         printf("Server said, wait round out\n");
         curr = STATE_DONE;  // sit out this round, it's a bonus
+      }
+      else if(head == HEADER_ENDGAME) {
+        if(in[0]) 
+          printf("\n\nYOU WON!\n"); 
+        else
+          printf("\n\nYou lost.\n");
+        exit(0);
       }
     }
     if(curr == STATE_DEFAULT) {
