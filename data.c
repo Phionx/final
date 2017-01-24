@@ -28,25 +28,41 @@ int main (int argc, char *argv []) {
 	char * line;
 	//round rounds [MAX_ROUNDS];
 	question questions [QUESTIONS];
+	/*
 	struct stat st;
 	stat("data.csv", &st);
 	int size = st.st_size;
-	printf("\nsize: %d", size);
-	line = (char *)malloc(size + 1);
+	printf("\nsize of file: %d", size);
+	printf("\nlenght of line before it was filled: %d\n", (int)strlen(line));*/
 	int i = 0;
 	int j = 0;
 
-	FILE *questionsFile = fopen("data.csv", "r");
+	FILE *questionsFile = fopen("data.csv", "rb");
     if (questionsFile)
     {
-		printf("testing");
+        //fgets(line, size , questionsFile);
+		fseek(questionsFile, 0, SEEK_END);
+		int length = ftell(questionsFile);
+		printf("\nlenght of csv: %d", length);
+		fseek(questionsFile, 0, SEEK_SET);
+		line = malloc(length);
+		if (line){
+			fread(line, 1, length, questionsFile);
+		}
+		fclose (questionsFile);
+	}
+
+	printf("%s", line);
+
+	
         char *token = 0;
 		char *innerToken = 0;
-        while (fgets(line, size , questionsFile)) 
-        {
+		//printf("\n%s\n", line);
+
+		printf("\nlenght of line after it was filled: %d\n", (int)strlen(line));
 			i = 0;
 			token = strtok(line, "⏒");
-            while (token)
+            while (token != NULL)
             {
 				printf("\n testing token: %s", token);
 				innerToken = strtok(token, "⏑");
@@ -72,6 +88,7 @@ int main (int argc, char *argv []) {
 					}
 					printf("\nfilling: %s", innerToken);
 					innerToken = strtok(NULL, "⏑");
+					printf("\nfilling next: %s", innerToken);
 					j++;
 				}
 				i++;
@@ -80,11 +97,10 @@ int main (int argc, char *argv []) {
 				strcpy(temp[tempCurr], token);
 				tempCurr++;*/
                 token = strtok(NULL, "⏒");
+				printf("new token: %s", token);
             }
-
-        }
-        fclose(questionsFile);
-    }
+        
+    
 
 
 	//printf("Testing Parser: %s", CSVArray[1][1]);
