@@ -22,8 +22,8 @@ int state;
 
 struct timespec starttime;
 struct timespec nowtime;
-// delay is currently 10ms
-// struct timespec delay;
+// delay is currently 300ms
+struct timespec delay;
 int semid;
 int sockdes;
 //int shm_fd = -1;
@@ -57,10 +57,7 @@ void sighandler(int sig) {
     return;
   }
   if(sig == SIGINT) {
-    char semidStr[20];
-    sprintf(semidStr, "%d", semid);
-    printf("Executing ipcrm");
-    execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
+    killSem();
     exit(sig);
   }
   /*  if(sig = SIGUSR2)
@@ -145,6 +142,12 @@ setBlocking(int fd, int blocking) {
     fcntl(fd, F_SETFL, flags |  O_NONBLOCK);
 }
 
+killSem() {  // program control is not returned
+  char semidStr[20];
+  sprintf(semidStr, "%d", semid);
+  execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
+}
+
 int main(int argc, char *argv[]) {
 //  signal(SIGINT, sighandler);
 //  signal(SIGTERM, sighandler);
@@ -194,8 +197,8 @@ int main(int argc, char *argv[]) {
   //  union semun arg;
 
   //outte = shared_mem;
-  // delay.tv_nsec = 10000000;
-  // delay.tv_sec = 0;
+  delay.tv_nsec = 300000000;
+  delay.tv_sec = 0;
   state = WAITING;
   int start = 0;
   int children[10];
@@ -220,6 +223,7 @@ int main(int argc, char *argv[]) {
       }
       sds[numPlayers++] = sd;
       setBlocking(sd, 0);
+      printf("Player %d joined.\n", numPlayers);
     }
   }
   else {
@@ -231,10 +235,11 @@ int main(int argc, char *argv[]) {
 
   }
   int i;
+  char *word = "abc";
   semid = semget(123456,0,0);
-  while(1) {
+  while(word && outte && *outte) {
     word = strsep(&outte, " ");
-    sleep(.03);
+    nanosleep(&delay, NULL);
     for(i = 0; i < numPlayers; i++) {
       sd = sds[i];
       if(sd != -1) {
@@ -242,12 +247,14 @@ int main(int argc, char *argv[]) {
         if(rv == 1) {
           sds[i] = -1;
         }
-        if(rv > 2) {
+        if(rv > 2) {  // rv is a given answer
           //checkAnswer(sd, rv);
         }
       }
       //printf("shm mem: %s\n", shared_mem);
     }
+  }
   printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
+  killSem();
   return 0;
 }

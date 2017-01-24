@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <sys/sem.h>
 #include <arpa/inet.h>
+#include <stdlib.h>
 
 int sock;
 
