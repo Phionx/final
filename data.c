@@ -6,7 +6,7 @@
 #define ROW_SIZE 6
 #define QUESTIONS 10000 //change this CAP on questions from each subject later
 #define ROUND_SIZE 26
-#define MAX_ROUNDS 1000
+#define MAX_ROUNDS 100
 
 
 typedef struct {
@@ -23,8 +23,13 @@ typedef struct {
 	question questions [ROUND_SIZE];
 } round;
 
+typedef struct {
+	int roundNums;
+	round rounds [MAX_ROUNDS];
+} game;
 
-int main (int argc, char *argv []) {
+game init (game scibowl){
+
 	char * line;
 	//round rounds [MAX_ROUNDS];
 	question questions [QUESTIONS];
@@ -98,9 +103,27 @@ int main (int argc, char *argv []) {
 				strcpy(temp[tempCurr], token);
 				tempCurr++;*/
             }
-		printf("\ni: %d", i); 
+		
+		
+		scibowl.roundNums = (int)i/25;
+		int iter = 0;
+		for (iter = 0; iter < scibowl.roundNums ; iter++){
+			for(int m = 0; m < 25; m++){
+				scibowl.rounds[iter].questions[m].subject = questions[iter*25 + m].subject;
+				scibowl.rounds[iter].questions[m].tossUpQuestion = questions[iter*25 + m].tossUpQuestion;;
+				scibowl.rounds[iter].questions[m].tossUpAnswer = questions[iter*25 + m].tossUpAnswer;;
+				scibowl.rounds[iter].questions[m].bonusQuestion = questions[iter*25 + m].bonusQuestion;
+				scibowl.rounds[iter].questions[m].bonusAnswer = questions[iter*25 + m].bonusAnswer;
+			}
+		}
+
+		return scibowl;
+}
 
 
+
+
+		/*
 		printf("\nTESTING DATA\n");
 		srand(time(NULL));
 		int k = 0;
@@ -112,6 +135,7 @@ int main (int argc, char *argv []) {
 		  printf("\nBonus Question: %s", questions[r].bonusQuestion);
 		  printf("\nBonus Ans: %s", questions[r].bonusAnswer);
 		}
+		*/
 
 
 
@@ -125,6 +149,3 @@ int main (int argc, char *argv []) {
 	
 	
 	
-	return 0;
-
-}
