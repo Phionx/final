@@ -1,3 +1,6 @@
+#ifndef COMMS_H
+#define COMMS_H
+
 enum header_t {
   HEADER_SCORE = 2,
   HEADER_WORD,
@@ -21,3 +24,5 @@ typedef struct {
 char *addHeader(char *dest, header head, char *data);
 header remHeader(char *data);
 setBlocking(int, int);
+
+#endif

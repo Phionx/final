@@ -1,3 +1,6 @@
+#ifndef SERVER_H
+#define SERVER_H
+
 #include "comms.h"
 
 int send_tick(int sd, char *word);
@@ -14,3 +17,5 @@ extern struct timespec starttime;
 extern int state;
 extern const int PLAYING;
 extern const int WAITING;
+
+#endif
