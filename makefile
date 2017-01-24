@@ -2,10 +2,10 @@ CC=gcc -g
 
 all: clean server client
 
-client: client.o comms.o
+client: client.o comms.o data.o
 	$(CC) client.o comms.o -o client.out
 
-server: server.o comms.o
+server: server.o comms.o data.o
 	$(CC) server.o comms.o -o server.out
 
 comms.o: comms.c
@@ -16,6 +16,9 @@ server.o: server.c
 
 client.o: client.c
 	$(CC) -c client.c
+
+data.o: data.c
+	$(CC) -c data.c
 
 clean:
 	-rm *.out *.o

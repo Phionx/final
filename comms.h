@@ -11,7 +11,8 @@ enum header_t {
   HEADER_ANSWER,
   HEADER_ANSWER_DENIED,
   HEADER_ROUNDEND,
-  HEADER_BONUS_WAIT
+  HEADER_BONUS_WAIT,
+  HEADER_ENDGAME
 };
 typedef enum header_t header;
 

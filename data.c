@@ -24,7 +24,7 @@ typedef struct {
 } round;
 
 typedef struct {
-	int roundNums;
+	int roundNum;
 	round rounds [MAX_ROUNDS];
 } game;
 

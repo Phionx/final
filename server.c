@@ -129,21 +129,36 @@ sendScores(int *sds, unsigned long *scores) {
   unsigned long evenScore, oddScore, i;
   evenScore = 0;
   oddScore = 0;
-  char evenBuf[256], oddBuf[256];
+  char toEven[256], toOdd[256];
+
   for(i = 0; i < 5; i++) {
     evenScore += scores[2 * i];
     oddScore += scores[2 * i + 1];
   }
-  sprintf(evenBuf, "%c%lu", HEADER_SCORE, evenScore);
-  sprintf(oddBuf, "%c%lu", HEADER_SCORE, oddScore);
+  toEven[0] = HEADER_SCORE;
+  *((unsigned long *)(toEven + 1)) = evenScore;
+  *((unsigned long *)(toEven + 1) + 1) = oddScore;
+  toOdd[0] = HEADER_SCORE;
+  *((unsigned long *)(toOdd + 1)) = oddScore;
+  *((unsigned long *)(toOdd + 1) + 1) = evenScore;
+
   for(i = 0; i < 5; i++) {
     if(sds[2 * i] != -1)
-      write(sds[2 * i], evenBuf, 256);
+      write(sds[2 * i], toEven, 256);
     if(sds[2 * i + 1] != -1)
-      write(sds[2 * i + 1], oddBuf, 256);
+      write(sds[2 * i + 1], toOdd, 256);
   }
 }
 
+unsigned long *teamScores(unsigned long *scores) {
+  unsigned long *tscores = calloc(2, sizeof(unsigned long));
+  int i;
+  for(i = 0; i < 5; i++) {
+    tscores[0] += scores[2 * i];
+    tscores[1] += scores[2 * i + 1];
+  }
+  return tscores;
+}
 
 int main(int argc, char *argv[]) {
 //  signal(SIGINT, sighandler);
@@ -174,21 +189,15 @@ int main(int argc, char *argv[]) {
   //const char *name = "questions";
   //int key = 123456;
 
-  char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins. \n Unlike the Einstein model, the Debye model properly models how this quantity changes for a substance as temperature decreases, though for higher temperatures it may be derived from a crystal's lattice vibrations through the Law of Dulong and Petit. For a monatomic ideal gas, it is three halves times the ideal gas constant, while that factor is seven-halves for a diatomic ideal gas. For 10 points, identify this quantity, the amount of energy necessary to increase the temperature of a unit quantity of a substance by a unit amount. ";
-  char answer[] = "answer";
-  // temp, later we will read from file
-  char *outte = out;
+  char *outte;
 
-  char *lol;
-
-  question q1 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
-  question q2 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
-  question q3 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
-  question q4 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
-  question q5 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
-  question questions[6] = {q1, q2, q3, q4, q5, 0};
-  int numQuestions = 5;
-
+  game myGame;
+  myGame = init(myGame);
+  srand(time(NULL));
+  int rn = rand() % myGame.roundNum;
+  round myRound = myGame.rounds[rn];
+  question *questions = myRound.questions;
+  int numQuestions = myRound.numberOfQuestions;
   //outte = shared_mem;
   delay.tv_nsec = 300000000;
   delay.tv_sec = 0;
@@ -296,6 +305,38 @@ int main(int argc, char *argv[]) {
         if(sd != -1) {
           write(sd, addHeader(temp, HEADER_ROUNDEND, temp), 256);
         }
+      }
+    }
+  }
+  int *tscores = teamScores(scores);
+  char gamewon[10];
+  gamewon[0] = HEADER_ENDGAME;
+  gamewon[1] = 1;
+  gamewon[2] = 0;
+  char gamelost[10];
+  gamelost[0] = HEADER_ENDGAME;
+  gamelost[1] = 0;
+  gamelost[2] = 0;
+  int sdi;
+  if(tscores[0] > tscores[1]) {
+    for(sdi = 0; sdi < numPlayers; sdi++) {
+      int sd = sds[sdi];
+      if(sd != -1) {
+        if(sdi % 2 == 0)
+          write(sd, gamewon, 256);
+        else
+          write(sd, gamelost, 256);
+      }
+    }
+  }
+  else {
+    for(sdi = 0; sdi < numPlayers; sdi++) {
+      int sd = sds[sdi];
+      if(sd != -1) {
+        if(sdi % 2 == 1)
+          write(sd, gamewon, 256);
+        else
+          write(sd, gamelost, 256);
       }
     }
   }
