@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
   game myGame;
   myGame = init(myGame);
   srand(time(NULL));
-  int rn = rand() % (myGame.roundNum - 1);
+  int rn = rand() % myGame.roundNum;
   round myRound = myGame.rounds[rn];
   question *questions = myRound.questions;
   int numQuestions = myRound.numberOfQuestions;
