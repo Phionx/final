@@ -92,8 +92,10 @@ char *tick(int sd, char *word) {
   }
   if(read(sd, readBuf, 256) != -1) {
     header head = remHeader(readBuf);
-    if(head == HEADER_INTERRUPT)
+    if(head == HEADER_INTERRUPT) {
+      printf("Header interrupt\n");
       return 1;
+    }
 
     else if(semctl(semid,0,GETVAL)==1 && head == HEADER_ANSWER_REQUEST) {
       struct sembuf ops;
@@ -106,7 +108,7 @@ char *tick(int sd, char *word) {
 	  }
 
     else if(head == HEADER_ANSWER) {
-      printf("answer");
+      printf("answer\n");
       return readBuf;
     }
   }
