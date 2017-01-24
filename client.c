@@ -78,6 +78,9 @@ int main(int argc, char *argv[]) {
         while(read(infd, in, 256) != -1) {};  // clear stdin after roundend
         curr = STATE_DEFAULT;
       }
+      else if(head == HEADER_BONUS_WAIT) {
+        curr = STATE_DONE;  // sit out this round, it's a bonus
+      }
     }
     if(curr == STATE_DEFAULT) {
       if(read(infd, in, 256) != -1) {

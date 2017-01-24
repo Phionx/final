@@ -16,7 +16,7 @@
 #include <sys/un.h>
 #include <sys/sem.h>
 #include "server.h"
-
+#include "data.h"
 
 const int WAITING = 0;
 const int PLAYING = 1;
@@ -228,48 +228,73 @@ int main(int argc, char *argv[]) {
   int i,j,k;
   unsigned long scores[] = {0,0,0,0,0,0,0,0,0,0};
   for(j = 0; j < numQuestions; j++) {
+    int bonus;
     question q = questions[j];
-    char *sentence = malloc(strlen(q.tossUpQuestion) + 1);
-    strcpy(sentence, q.tossUpQuestion);
-    char *answer = q.tossUpAnswer;
-    char *word = strsep(&sentence, " ");
-    char roundEnded = 0;
-    while(outte && word != NULL && !roundEnded) {
-      if(ansavail) {
-        nanosleep(&delay, NULL);
+    int winner = -1;
+    for(bonus = 0; bonus < 2; bonus++) {
+      char *sentence;
+      char *answer;
+      char roundEnded = 0;
+      if(!bonus) {
+        sentence = malloc(strlen(q.tossUpQuestion) + 1);
+        strcpy(sentence, q.tossUpQuestion);
+        answer = q.tossUpAnswer;
       }
-      for(i = 0; i < numPlayers; i++) {
-        sd = sds[i];
-        if(sd != -1) {
-          send_tick(sd, word);
-          char *rv = receive_tick(sd);
-          //printf("%li", rv);
-          if(rv == 1) {
-            sds[i] = -1;
-          }
-          else if(rv) {  // rv is a given answer
-            //printf(rv);
-            if(checkAnswer(rv, answer)) {
-              scores[i]++;
-              sendScores(sds, scores);
-              roundEnded = 1;
-              break;
+      else {
+        sentence = malloc(strlen(q.bonusQuestion) + 1);
+        strcpy(sentence, q.bonusQuestion);
+        answer = q.bonusAnswer;
+        if(winner != -1) {
+          for(i = 0; i < numPlayers; i++) {
+            sd = sds[i];
+            if(sd != -1 && (winner - sd) % 2 == 1) {
+              char nothing[2] = "";
+              write(sd, addHeader(nothing, HEADER_BONUS_WAIT, nothing), 256);
             }
           }
-          else {
-            //printf(rv);
-          }
         }
-        //printf("shm mem: %s\n", shared_mem);
       }
-      if(ansavail)
-        word = strsep(&sentence, " ");
-    }
-    char temp[5] = "";
-    for(i = 0; i < numPlayers; i++) {
-      int sd = sds[i];
-      if(sd != -1) {
-        write(sd, addHeader(temp, HEADER_ROUNDEND, temp), 256);
+      
+
+      
+      while(outte && word != NULL && !roundEnded) {
+        if(ansavail) {
+          nanosleep(&delay, NULL);
+        }
+        for(i = 0; i < numPlayers; i++) {
+          sd = sds[i];
+          if(sd != -1) {
+            send_tick(sd, word);
+            char *rv = receive_tick(sd);
+            //printf("%li", rv);
+            if(rv == 1) {
+              sds[i] = -1;
+            }
+            else if(rv) {  // rv is a given answer
+              //printf(rv);
+              if(checkAnswer(rv, answer)) {
+                winner = i;
+                scores[i]++;
+                sendScores(sds, scores);
+                roundEnded = 1;
+                break;
+              }
+            }
+            else {
+              //printf(rv);
+            }
+          }
+          //printf("shm mem: %s\n", shared_mem);
+        }
+        if(ansavail)
+          word = strsep(&sentence, " ");
+      }
+      char temp[5] = "";
+      for(i = 0; i < numPlayers; i++) {
+        int sd = sds[i];
+        if(sd != -1) {
+          write(sd, addHeader(temp, HEADER_ROUNDEND, temp), 256);
+        }
       }
     }
   }

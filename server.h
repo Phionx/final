@@ -1,7 +1,7 @@
 #include "comms.h"
 
-int tick_send(int sd, char *word);
-char *tick_receive(int sd);
+int send_tick(int sd, char *word);
+char *receive_tick(int sd);
 int main(int argc, char *argv[]);
 void sighandler(int sig);
 int timePassed(struct timespec start, float amtTime);
