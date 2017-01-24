@@ -79,6 +79,7 @@ int main(int argc, char *argv[]) {
         curr = STATE_DEFAULT;
       }
       else if(head == HEADER_BONUS_WAIT) {
+        printf("Server said, wait round out\n");
         curr = STATE_DONE;  // sit out this round, it's a bonus
       }
     }

@@ -1,3 +1,6 @@
+#ifndef DATA_H
+#define DATA_H
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -29,3 +32,5 @@ typedef struct {
 } game;
 
 game init (game scibowl);
+
+#endif

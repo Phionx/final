@@ -245,9 +245,9 @@ int main(int argc, char *argv[]) {
         strcpy(sentence, q.bonusQuestion);
         answer = q.bonusAnswer;
         if(winner != -1) {
-          for(i = 0; i < numPlayers; i++) {
+          for(i = winner % 2 ? 0 : 1; i < numPlayers; i+=2) {
             sd = sds[i];
-            if(sd != -1 && (winner - sd) % 2 == 1) {
+            if(sd != -1) {
               char nothing[2] = "";
               write(sd, addHeader(nothing, HEADER_BONUS_WAIT, nothing), 256);
             }
@@ -256,7 +256,7 @@ int main(int argc, char *argv[]) {
       }
       
 
-      
+      char *word = strsep(&sentence, " ");
       while(outte && word != NULL && !roundEnded) {
         if(ansavail) {
           nanosleep(&delay, NULL);
@@ -274,6 +274,7 @@ int main(int argc, char *argv[]) {
               //printf(rv);
               if(checkAnswer(rv, answer)) {
                 winner = i;
+                printf("winner: %d", winner);
                 scores[i]++;
                 sendScores(sds, scores);
                 roundEnded = 1;
