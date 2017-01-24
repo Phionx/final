@@ -115,6 +115,41 @@ char *tick(int sd, char *word) {
   return 0;
 }
 
+int send_tick(int sd, char *word) {
+  char writeBuf[256];
+  if(ansavail) {
+    if(write(sd, addHeader(writeBuf, HEADER_WORD, word), 256) == -1)
+      return 1;
+  }
+  return 0;
+}
+
+char *receive_tick(int sd) {
+  char buf[256];
+
+  if(read(sd, buf, 256) != -1) {
+    header head = remHeader(buf);
+    if(head == HEADER_INTERRUPT) {
+      printf("Header interrupt\n");
+      return 1;
+    }
+
+    else if(head == HEADER_ANSWER_REQUEST && ansavail) {
+      write(sd, addHeader(buf, HEADER_ANSWER_ACCEPT, buf), 256);
+      ansavail = 0;
+    }
+
+    else if(head == HEADER_ANSWER) {
+      printf("answer: %s\n", buf);
+      ansavail = 1;
+      char *pbuf = malloc(256);
+      strcpy(pbuf, buf);
+      return pbuf;
+    }
+  }
+  return 0;
+}
+
 killSem() {  // program control is not returned
   char semidStr[20];
   sprintf(semidStr, "%d", semid);
@@ -221,35 +256,35 @@ int main(int argc, char *argv[]) {
   printf("Out of loop\n");
   int i;
   char *word = strsep(&outte, " ");
-  char headerWord[256];
   int scores[] = {0,0,0,0,0,0,0,0,0,0};
   semid = semget(123456,0,0);
   while(outte && word != NULL) {
     if(ansavail) {
       printf("Sending %s", word);
-      addHeader(headerWord, HEADER_WORD, word);
       nanosleep(&delay, NULL);
-      for(i = 0; i < numPlayers; i++) {
-        sd = sds[i];
-        if(sd != -1) {
-          char *rv = tick(sd, headerWord);
-          printf("%li", rv);
-          if(rv == 1) {
-            sds[i] = -1;
-          }
-          else if(rv) {  // rv is a given answer
-            printf(rv);
-            if(checkAnswer(rv, answer))
-              scores[i]++;
-          }
-          else {
-            printf(rv);
-          }
-        }
-        //printf("shm mem: %s\n", shared_mem);
-      }
-      word = strsep(&outte, " ");
     }
+    for(i = 0; i < numPlayers; i++) {
+      sd = sds[i];
+      if(sd != -1) {
+        send_tick(sd, word);
+        char *rv = receive_tick(sd);
+        printf("%li", rv);
+        if(rv == 1) {
+          sds[i] = -1;
+        }
+        else if(rv) {  // rv is a given answer
+          printf(rv);
+          if(checkAnswer(rv, answer))
+            scores[i]++;
+        }
+        else {
+          printf(rv);
+        }
+      }
+      //printf("shm mem: %s\n", shared_mem);
+    }
+    if(ansavail)
+      word = strsep(&outte, " ");
   }
   printf("PID %d ended outside of loop. It is%s forked.\n", getpid(), f ? " not" : "");
   killSem();
