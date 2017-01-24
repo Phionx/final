@@ -64,12 +64,12 @@ int main (int argc, char *argv []) {
 		i = 0;
 		
 		//char * test = "a⏑b⏑c⏒d⏑e⏑f⏒g⏑e⏒";
-		while ( (token = strsep(&line, "ă")) != NULL){
+		while ( (token = strsep(&line, "\x02")) != NULL){
 				//printf("\ntoken: %s", token);
 				char * foo = strdup(token);
-				while ((innerToken = strsep(&foo, "Ă")) != NULL){
+				while ((innerToken = strsep(&foo, "\x03")) != NULL){
 					char * goo = strdup(innerToken);
-					if(strlen(goo) != 0){
+					if (strlen(goo) > 0) {
 					if (goo[0] == '0') {
 						printf("\nSubject innertoken: %s", goo + 3);
 						questions[i].subject = (char *)malloc(sizeof(goo) + 1);
