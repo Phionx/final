@@ -26,16 +26,9 @@ struct timespec starttime;
 struct timespec nowtime;
 // delay is currently 300ms
 struct timespec delay;
-int semid;
 int sockdes;
 //int shm_fd = -1;
 //char* shared_mem;
-
-union semun {
-  int val;
-  struct semid_ds *buf;
-  ushort *array;
-};
 
 int ansavail = 1;
 
@@ -61,7 +54,6 @@ void sighandler(int sig) {
     return;
   }
   if(sig == SIGINT) {
-    killSem();
     exit(sig);
   }
   /*  if(sig = SIGUSR2)
@@ -164,6 +156,32 @@ char checkAnswer(char *answer, char *realAnswer) {
     return checkAnswer(answer, realAnswer);
 }
 
+sendScores(int *sds, unsigned long *scores) {
+  unsigned long evenScore, oddScore, i;
+  evenScore = 0;
+  oddScore = 0;
+  char evenBuf[256], oddBuf[256];
+  for(i = 0; i < 10; i++) {
+    printf("scores[%d]: %lu\n", i, scores[i]);
+  }
+  for(i = 0; i < 5; i++) {
+    printf("scores[%d]: %lu\n", 2 * i, scores[2 * i]);
+    printf("scores[%d]: %lu\n", 2 * i + 1, scores[2 * i + 1]);
+    evenScore += scores[2 * i];
+    oddScore += scores[2 * i + 1];
+  }
+  printf("evens: %lu, odds: %lu", evenScore, oddScore);
+  sprintf(evenBuf, "%c%lu", HEADER_SCORE, evenScore);
+  sprintf(oddBuf, "%c%lu", HEADER_SCORE, oddScore);
+  printf("evens: %s, odds: %s", evenBuf, oddBuf);
+  for(i = 0; i < 5; i++) {
+    if(sds[2 * i] != -1)
+      write(sds[2 * i], evenBuf, 256);
+    if(sds[2 * i + 1] != -1)
+      write(sds[2 * i + 1], oddBuf, 256);
+  }
+}
+
 
 int main(int argc, char *argv[]) {
 //  signal(SIGINT, sighandler);
@@ -202,13 +220,13 @@ int main(int argc, char *argv[]) {
 
   char *lol;
 
-  semid = semget(123456,1,0666 | IPC_CREAT | IPC_EXCL);// | S_IRUSR |
-  //		 S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-  union semun arg;
-  arg.val = 1;
-  semctl(semid,0,SETVAL,arg);
-  printf("sem val: %d\n",semctl(semid,0,GETVAL));
-  //  union semun arg;
+  question q1 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
+  question q2 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
+  question q3 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
+  question q4 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
+  question q5 = {"chem", "a ba s d s w r cd s s s a w sd s w s w s ws", "hello", "a 1  2 34 4556  6764 3 23 d ed", "goodbye"};
+  question questions[6] = {q1, q2, q3, q4, q5, 0};
+  int numQuestions = 5;
 
   //outte = shared_mem;
   delay.tv_nsec = 300000000;
@@ -222,7 +240,7 @@ int main(int argc, char *argv[]) {
   int f = fork();  // parent gets new clients, child waits for input
   int isMaster = 1;
   int sd = -1;
-  int sds[10];
+  int sds[10] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
   if(f) {
     while (1) {
       if(-1 == (sd = accept(sockdes, (struct sockaddr *) &cli_addr, &cli_len))) {
@@ -237,7 +255,7 @@ int main(int argc, char *argv[]) {
       }
       sds[numPlayers++] = sd;
       setBlocking(sd, 0);
-      printf("Player %d joined.\n", numPlayers);
+      printf("Player %d joined team %s.\n", numPlayers, numPlayers % 2 ? "red" : "blue");
     }
   }
   else {
@@ -248,37 +266,47 @@ int main(int argc, char *argv[]) {
     exit(0);  // job done, parent now has all children and can continue
   }
   printf("Out of loop\n");
-  int i;
-  char *word = strsep(&outte, " ");
-  int scores[] = {0,0,0,0,0,0,0,0,0,0};
-  semid = semget(123456,0,0);
-  while(outte && word != NULL) {
-    if(ansavail) {
-      printf("Sending %s", word);
-      nanosleep(&delay, NULL);
-    }
-    for(i = 0; i < numPlayers; i++) {
-      sd = sds[i];
-      if(sd != -1) {
-        send_tick(sd, word);
-        char *rv = receive_tick(sd);
-        printf("%li", rv);
-        if(rv == 1) {
-          sds[i] = -1;
-        }
-        else if(rv) {  // rv is a given answer
-          printf(rv);
-          if(checkAnswer(rv, answer))
-            scores[i]++;
-        }
-        else {
-          printf(rv);
-        }
+  int i,j,k;
+  unsigned long scores[] = {0,0,0,0,0,0,0,0,0,0};
+  for(j = 0; j < numQuestions; j++) {
+    question q = questions[j];
+    char *sentence = malloc(strlen(q.tossUpQuestion) + 1);
+    strcpy(sentence, q.tossUpQuestion);
+    char *answer = q.tossUpAnswer;
+    char *word = strsep(&sentence, " ");
+    char roundEnded = 0;
+    while(outte && word != NULL && !roundEnded) {
+      if(ansavail) {
+        printf("Sending %s", word);
+        nanosleep(&delay, NULL);
       }
-      //printf("shm mem: %s\n", shared_mem);
+      for(i = 0; i < numPlayers; i++) {
+        sd = sds[i];
+        if(sd != -1) {
+          send_tick(sd, word);
+          char *rv = receive_tick(sd);
+          //printf("%li", rv);
+          if(rv == 1) {
+            sds[i] = -1;
+          }
+          else if(rv) {  // rv is a given answer
+            //printf(rv);
+            if(checkAnswer(rv, answer)) {
+              scores[i]++;
+              sendScores(sds, scores);
+              roundEnded = 1;
+              break;
+            }
+          }
+          else {
+            //printf(rv);
+          }
+        }
+        //printf("shm mem: %s\n", shared_mem);
+      }
+      if(ansavail)
+        word = strsep(&sentence, " ");
     }
-    if(ansavail)
-      word = strsep(&outte, " ");
   }
   return 0;
 }
