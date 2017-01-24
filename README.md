@@ -11,3 +11,19 @@ Instructions:
 5. After the game begins, questions will be printed on terminal to each client. Once the question is finished being read, the players will be able to answer. A player may also interrupt and answer before the question is finished being read out by pressing ENTER and submitting an answer.
 6. For every question a player gets right, the score of that player's team goes up by 1. 
 7. The team with the highest points wins after the last question is read.
+
+Included files:
+
+DEVLOG
+DESIGN			
+client.h	
+comms.h		
+data.csv	
+makefile	
+server.c
+README.md	
+client.c	
+comms.c				
+data.c	
+parser.c 
+server.h
