@@ -1,4 +1,4 @@
-CC=gcc -g -std=gnu11
+CC=gcc -g
 
 all: clean server client
 

@@ -67,6 +67,10 @@ int main(int argc, char *argv[]) {
         read(infd, in, 256);
         setBlocking(infd, 1);
         sendAnswer();
+        setBlocking(infd, 0);
+      }
+      else if(head == HEADER_SCORE) {
+        printf("\nYour team score: %s\n", in);
       }
     }
     if(curr == STATE_DEFAULT) {
