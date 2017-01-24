@@ -25,7 +25,10 @@ sendAnswer() {
   char answer[256];
   printf("Enter the answer: ");
   fgets(answer, 256, stdin);
-  write(sock, addHeader(answer, HEADER_ANSWER, strtok(answer, "\n")), 256);
+  printf("You entered: %s\n", answer);
+  addHeader(answer, HEADER_ANSWER, strtok(answer, "\n"));
+  printf("sending %s", answer);
+  write(sock, answer, 256);
 }
 
 int main(int argc, char *argv[]) {

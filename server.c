@@ -106,6 +106,7 @@ char *tick(int sd, char *word) {
 	  }
 
     else if(head == HEADER_ANSWER) {
+      printf("answer");
       return readBuf;
     }
   }
@@ -124,6 +125,20 @@ killSem() {  // program control is not returned
   char semidStr[20];
   sprintf(semidStr, "%d", semid);
   execlp("ipcrm", "ipcrm", "-s", semidStr, 0);
+}
+
+char checkAnswer(char *answer, char *realAnswer) {
+  printf("\n\nUser answered: %s\n", answer);
+  printf("Real answer: %s\n", realAnswer);
+  printf("Is this correct? (y/n) ");
+  char correct[3];
+  fgets(correct, 3, stdin);
+  if(!strcmp(correct, "y\n"))
+    return 1;
+  else if(!strcmp(correct, "n\n"))
+    return 0;
+  else
+    return checkAnswer(answer, realAnswer);
 }
 
 
@@ -158,10 +173,7 @@ int main(int argc, char *argv[]) {
   //int key = 123456;
 
   char out[] = "These substances are transported by PIN proteins and bind to TIR1. They stimulate proton pumps to lower the pH and activate expansins, according to the acid growth hypothesis. In high concentrations, they stimulate excess ethylene production, which induces abscission, hence the use of these compounds in herbicides like Agent Orange. Indole-3-acetic acid is one example of these compounds which contribute to apical dominance, phototropisms, and cell elongation. For 10 points, name these plant hormones  whose effect is strengthened in the presence of cytokinins and gibberellins. \n Unlike the Einstein model, the Debye model properly models how this quantity changes for a substance as temperature decreases, though for higher temperatures it may be derived from a crystal's lattice vibrations through the Law of Dulong and Petit. For a monatomic ideal gas, it is three halves times the ideal gas constant, while that factor is seven-halves for a diatomic ideal gas. For 10 points, identify this quantity, the amount of energy necessary to increase the temperature of a unit quantity of a substance by a unit amount. ";
-  char *answers[5] = {
-    "IDK", "the", "real", "answer"
-  };
-  answers[4] = 0;
+  char answer[] = "answer";
   // temp, later we will read from file
   char *outte = out;
 
@@ -216,6 +228,7 @@ int main(int argc, char *argv[]) {
   int i;
   char *word;
   char headerWord[256];
+  int scores[] = {0,0,0,0,0,0,0,0,0,0};
   semid = semget(123456,0,0);
   while(outte && (word = strsep(&outte, " ")) != NULL) {
     printf("Sending %s", word);
@@ -228,8 +241,10 @@ int main(int argc, char *argv[]) {
         if(rv == 1) {
           sds[i] = -1;
         }
-        if(rv > 2) {  // rv is a given answer
-          //checkAnswer(sd, rv);
+        else if(rv > 2) {  // rv is a given answer
+          printf(rv);
+          if(checkAnswer(rv, answer))
+            scores[i]++;
         }
       }
       //printf("shm mem: %s\n", shared_mem);
